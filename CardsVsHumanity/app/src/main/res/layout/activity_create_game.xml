@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.omerbarr.cardsvshumanity.CreateGameActivity"
+    android:padding="8dp">
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp">
+        <TextView
+            android:id="@+id/text_choose_game_code"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textWhite"
+            android:textStyle="bold"
+            android:text="Pick game code or generate one:" />
+
+        <Button
+            android:id="@+id/button_button_generate_code"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@id/text_choose_game_code"
+            android:textStyle="bold"
+            android:background="@drawable/my_button_style"
+            android:textColor="@android:color/white"
+            android:text="generate"/>
+
+        <EditText
+            android:id="@+id/edit_text_game_code"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/button_button_generate_code"
+            android:lines="1"
+            android:maxLength="4"
+            android:textColor="@color/textWhite"
+            android:textColorHint="@color/textWhite"
+            android:textStyle="bold"
+            android:layout_below="@id/text_choose_game_code"
+            android:gravity="center"
+            android:hint="4 letters" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorLine"
+            android:layout_marginTop="5dp"
+            android:layout_margin="10dp"
+            android:layout_below="@id/button_button_generate_code"/>
+    </RelativeLayout>
+
+</RelativeLayout>
