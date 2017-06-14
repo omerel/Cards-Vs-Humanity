@@ -7,21 +7,21 @@
     tools:context="com.omerbarr.cardsvshumanity.MainActivity">
 
     <TextView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="@color/colorPrimary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="Cards\nVS\nHumanity"
         android:gravity="top|center_horizontal"
         android:paddingTop="50dp"
         android:textColor="@android:color/white"
         android:textSize="70sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintHorizontal_bias="0.512"
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/button_main_create_new_game" />
 
 
     <android.support.v7.widget.AppCompatButton

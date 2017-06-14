@@ -6,4 +6,6 @@
     <color name="statusBarColor">#000000</color>
     <color name="textWhite">#ffffff</color>
     <color name="colorLine">#d9dcdb</color>
+    <color name="textGrey">#bbc2c0</color>
+
 </resources>
