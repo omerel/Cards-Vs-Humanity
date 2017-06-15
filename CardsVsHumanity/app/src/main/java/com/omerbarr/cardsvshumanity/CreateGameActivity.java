@@ -1,25 +1,19 @@
 package com.omerbarr.cardsvshumanity;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
 import android.content.Intent;
-import android.inputmethodservice.Keyboard;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -27,17 +21,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothServer;
+import com.omerbarr.cardsvshumanity.Bluetooth.BlutoothConstants;
 import com.omerbarr.cardsvshumanity.Utils.PlayerListArrayAdapter;
 
 import java.util.ArrayList;
 
-public class CreateGameActivity extends AppCompatActivity implements View.OnClickListener{
+public class CreateGameActivity extends AppCompatActivity implements View.OnClickListener , BlutoothConstants{
 
     private final String TAG = "DEBUG: "+CreateGameActivity.class.getSimpleName();
 
 
     // Views
     private EditText mPlayerName;
+    private TextView mTextViewCode;
     private ListView mPlayerList;
     private Button mPublishButton;
     private Button mStartButton;
@@ -57,6 +53,10 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
     // Handler for all incoming messages from BL classes
     private final Messenger mMessenger = new Messenger(new IncomingHandler());
 
+    private String mGamecode;
+
+    private BluetoothAdapter mBluetoothAdapter;
+    private String mDeviceOldName;
 
 
     @Override
@@ -85,6 +85,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         mPlayerBox =  findViewById(R.id.player_box);
         mCodeBox =  findViewById(R.id.code_box);
         mPlayersBox =  findViewById(R.id.players_box);
+        mTextViewCode = (TextView) findViewById(R.id.text_game_code);
 
         // set boxes visibility
         mPlayersBox.setVisibility(View.GONE);
@@ -94,6 +95,8 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         // set socket list
         mSocketArrayList = new ArrayList<>();
         mSocketArrayList.add(null);// my socket will be null
+
+        mBluetoothAdapter= BluetoothAdapter.getDefaultAdapter();
 
     }
 
@@ -134,6 +137,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
                     mPublishButton.setVisibility(View.GONE);
                     mPlayersBox.setVisibility(View.VISIBLE);
                     mCodeBox.setVisibility(View.VISIBLE);
+                    mGamecode = generateGameCode();
                     mHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -158,7 +162,15 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         }
     }
 
+    private String generateGameCode() {
+        mTextViewCode.setText("bbbb");
+        return "bbbb";
+    }
+
     private void startPublish() {
+
+        mDeviceOldName = mBluetoothAdapter.getName();
+        mBluetoothAdapter.setName(mGamecode+"_"+mPlayerName.getText().toString());
         BluetoothServer bluetoothServer = new BluetoothServer(this,mMessenger,mSocketArrayList,mListArrayAdapter);
         bluetoothServer.start();
         beDiscoverable();
@@ -176,14 +188,12 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
      */
     class IncomingHandler extends Handler {
 
-        String address;
-        BluetoothDevice bl;
-
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case 1:
-                    Log.e(TAG, "DEVICE_CONNECTED_SUCCESSFULLY_TO_BLUETOOTH_SERVER");
+                case DEVICE_ADDED:
+                    Log.e(TAG, "DEVICE_ADDED");
+                    Toast.makeText(getApplicationContext(),"another player joined the game",Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     super.handleMessage(msg);
@@ -194,8 +204,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
      *  Make the device be discoverable
      */
     private void beDiscoverable(){
-        BluetoothAdapter bluetoothAdapter= BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter != null){
+        if (mBluetoothAdapter != null){
             Intent discoverableIntent = new
                     Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
             discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,120);

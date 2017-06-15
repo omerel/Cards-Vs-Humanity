@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/textWhite"
             android:textStyle="bold"
-            android:text="Enter a nickname:" />
+            android:text="Enter your nickname:" />
 
         <EditText
             android:id="@+id/edit_text_nick_name"
@@ -72,7 +72,7 @@
             android:text="Your game code is:" />
 
         <TextView
-            android:id="@+id/edit_text_game_code"
+            android:id="@+id/text_game_code"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:lines="1"
@@ -83,14 +83,8 @@
             android:textSize="32sp"
             android:layout_below="@id/text_choose_game_code"
             android:gravity="center"
-            android:hint="A7LX" />
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/colorLine"
-            android:layout_marginTop="5dp"
-            android:layout_margin="4dp"
-            android:layout_below="@id/edit_text_game_code"/>
+            android:hint="aaaa" />
+
     </RelativeLayout>
 
     <RelativeLayout

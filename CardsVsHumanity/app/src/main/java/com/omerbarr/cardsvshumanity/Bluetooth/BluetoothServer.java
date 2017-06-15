@@ -24,11 +24,10 @@ import java.util.UUID;
  * creates BluetoothSocket.
  */
 
-public class BluetoothServer extends Thread {
+public class BluetoothServer extends Thread  implements BlutoothConstants{
 
     private final String TAG = "DEBUG: "+BluetoothServer.class.getSimpleName();
-    // Unique UUID for this application
-    UUID APP_UUID = UUID.fromString("ca87c0d0-afac-11de-8a39-0800200c9a26");
+
 
     private final BluetoothServerSocket mmServerSocket;
     private BluetoothAdapter mBluetoothAdapter;
@@ -44,7 +43,9 @@ public class BluetoothServer extends Thread {
      * @param socketArrayList
      * @param listArrayAdapter
      */
-    public BluetoothServer(Context context, Messenger messenger, ArrayList<BluetoothSocket> socketArrayList, PlayerListArrayAdapter listArrayAdapter) {
+    public BluetoothServer(Context context, Messenger messenger,
+                           ArrayList<BluetoothSocket> socketArrayList,
+                           PlayerListArrayAdapter listArrayAdapter) {
 
         // Use messenger to update bluetooth manger
         this.mMessenger = messenger;
@@ -88,11 +89,13 @@ public class BluetoothServer extends Thread {
             }
             // If a connection was accepted
             if (socket != null) {
-                // get connceted device
+                // get connected device
                 mConnectedDevice = socket.getRemoteDevice();
                 String deviceName = getDeviceName(mConnectedDevice);
                 addDeviceToGame(socket,deviceName);
             }
+            // todo break to close the thread
+            break;
         }
     }
 
@@ -101,6 +104,7 @@ public class BluetoothServer extends Thread {
         if (deviceName != null && bluetoothSocket != null){
             mSocketArrayList.add(bluetoothSocket);
             mListArrayAdapter.add(deviceName);
+            sendMessageToManager(DEVICE_ADDED);
         }
 
     }
@@ -117,7 +121,7 @@ public class BluetoothServer extends Thread {
     }
 
     /**
-     * Send message to the bluetooth manager
+     * Send message to activity
      * @param msg message type
      */
     private void sendMessageToManager(int msg)  {

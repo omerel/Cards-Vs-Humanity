@@ -1,9 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.omerbarr.cardsvshumanity.JoinGameActivity">
+    tools:context="com.omerbarr.cardsvshumanity.JoinGameActivity"
+    android:padding="8dp">
 
-</android.support.constraint.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:id="@+id/player_box"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp">
+            <TextView
+                android:id="@+id/text_Pick_user_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textWhite"
+                android:textStyle="bold"
+                android:text="Enter your nickname:" />
+
+            <EditText
+                android:id="@+id/edit_text_nick_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lines="1"
+                android:layout_marginLeft="10dp"
+                android:textColor="@color/textWhite"
+                android:textColorHint="@color/textGrey"
+                android:textStyle="bold"
+                android:layout_below="@id/text_Pick_user_name"
+                android:hint="Write here" />
+
+            <TextView
+                android:id="@+id/text_choose_game_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textWhite"
+                android:textStyle="bold"
+                android:layout_below="@id/edit_text_nick_name"
+                android:text="Enter game code:" />
+
+            <EditText
+                android:id="@+id/edit_text_game_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lines="1"
+                android:layout_marginLeft="10dp"
+                android:textColor="@color/textWhite"
+                android:textColorHint="@color/textGrey"
+                android:textStyle="bold"
+                android:layout_below="@id/text_choose_game_code"
+                android:hint="Write here" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorLine"
+                android:layout_marginTop="5dp"
+                android:layout_margin="4dp"
+                android:layout_below="@id/edit_text_game_code"/>
+        </RelativeLayout>
+
+        <Button
+            android:id="@+id/button_button_join"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="10dp"
+            android:layout_alignParentRight="true"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:background="@drawable/my_button_style"
+            android:textColor="@android:color/white"
+            android:text="Join game"/>
+
+
+        <TextView
+            android:id="@+id/text_connected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textWhite"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:gravity="center"
+            android:text="Connected!" />
+
+        <ProgressBar
+            android:id="@+id/spinner_waiting"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_margin="20dp"
+            android:layout_gravity="center">
+        </ProgressBar>
+
+        <RelativeLayout
+            android:id="@+id/waiting_box"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="20dp">
+
+            <TextView
+                android:id="@+id/text_waiting"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textWhite"
+                android:textStyle="bold"
+                android:textSize="24sp"
+                android:gravity="center"
+                android:text="Please wait until game  manager will start the game" />
+        </RelativeLayout>
+    </LinearLayout>
+
+</RelativeLayout>
