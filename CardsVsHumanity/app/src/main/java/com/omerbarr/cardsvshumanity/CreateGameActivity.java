@@ -2,10 +2,15 @@ package com.omerbarr.cardsvshumanity;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -21,14 +26,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothServer;
-import com.omerbarr.cardsvshumanity.Bluetooth.BlutoothConstants;
+import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants;
+import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService;
 import com.omerbarr.cardsvshumanity.Utils.PlayerListArrayAdapter;
 
 import java.util.ArrayList;
 
-public class CreateGameActivity extends AppCompatActivity implements View.OnClickListener , BlutoothConstants{
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.KILL_SERVICE;
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.OPEN_SEVER;
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.SET_MANAGER;
+
+public class CreateGameActivity extends AppCompatActivity implements View.OnClickListener , BluetoothConstants {
 
     private final String TAG = "DEBUG: "+CreateGameActivity.class.getSimpleName();
+
+    public static final String ADD_DEVICE_TO_LIST = "cardsvshumanity.BroadcastReceiver.ADD_DEVICE_TO_LIST";
 
 
     // Views
@@ -47,16 +59,15 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
     //post delay handler
     private Handler mHandler;
 
-    // List of all connected devices
-    private ArrayList<BluetoothSocket> mSocketArrayList;
-
-    // Handler for all incoming messages from BL classes
-    private final Messenger mMessenger = new Messenger(new IncomingHandler());
-
     private String mGamecode;
 
     private BluetoothAdapter mBluetoothAdapter;
     private String mDeviceOldName;
+
+
+    // General BroadcastReceiver
+    private BroadcastReceiver mBroadcastReceiver;
+    private IntentFilter mFilter;
 
 
     @Override
@@ -91,13 +102,33 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         mPlayersBox.setVisibility(View.GONE);
         mCodeBox.setVisibility(View.GONE);
 
-
-        // set socket list
-        mSocketArrayList = new ArrayList<>();
-        mSocketArrayList.add(null);// my socket will be null
-
         mBluetoothAdapter= BluetoothAdapter.getDefaultAdapter();
 
+        startService(new Intent(CreateGameActivity.this,BluetoothService.class));
+
+        // activity broadastReceiver
+        createGeneralBroadcastReceiver();
+
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // BroadCast that i'm manager to Service
+                Intent msgToService = new Intent(SET_MANAGER);
+                msgToService.putExtra("isManager",true);
+                sendBroadcast(msgToService);
+            }
+        },200);
+
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        unregisterReceiver(mBroadcastReceiver);
+        // BroadCast kill service to Service
+        Intent msgToService = new Intent(KILL_SERVICE);
+        sendBroadcast(msgToService);
     }
 
     @Override
@@ -171,9 +202,8 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
 
         mDeviceOldName = mBluetoothAdapter.getName();
         mBluetoothAdapter.setName(mGamecode+"_"+mPlayerName.getText().toString());
-        BluetoothServer bluetoothServer = new BluetoothServer(this,mMessenger,mSocketArrayList,mListArrayAdapter);
-        bluetoothServer.start();
         beDiscoverable();
+        sendBroadcast(new Intent(OPEN_SEVER));
     }
 
     private boolean validateName() {
@@ -183,23 +213,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         return false;
     }
 
-    /**
-     * Handler of incoming messages from one of the BL classes
-     */
-    class IncomingHandler extends Handler {
 
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case DEVICE_ADDED:
-                    Log.e(TAG, "DEVICE_ADDED");
-                    Toast.makeText(getApplicationContext(),"another player joined the game",Toast.LENGTH_SHORT).show();
-                    break;
-                default:
-                    super.handleMessage(msg);
-            }
-        }
-    }
     /**
      *  Make the device be discoverable
      */
@@ -212,4 +226,30 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
             this.startActivity(discoverableIntent);
         }
     }
+
+    private void createGeneralBroadcastReceiver() {
+
+        mFilter = new IntentFilter();
+        mFilter.addAction(ADD_DEVICE_TO_LIST);
+
+        mBroadcastReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                String action = intent.getAction();
+
+                switch (action){
+                    // When incoming message received
+                    case ADD_DEVICE_TO_LIST:
+                        String deviceName = intent.getStringExtra("name");
+                        mListArrayAdapter.add("Player "+(mPlayersArrayList.size()+1)+": "+deviceName);
+                        Log.e(TAG,"ADD_DEVICE_TO_LIST");
+                        break;
+                }
+            }
+        };
+        registerReceiver(mBroadcastReceiver, mFilter);
+    }
+
 }

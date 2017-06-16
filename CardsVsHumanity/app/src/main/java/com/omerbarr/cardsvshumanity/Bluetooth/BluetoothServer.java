@@ -4,19 +4,14 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.content.Intent;
+import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
-import android.widget.ListAdapter;
-
-import com.omerbarr.cardsvshumanity.Utils.PlayerListArrayAdapter;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.UUID;
 
 /**
  * Created by omer on 10/12/2016.
@@ -24,7 +19,7 @@ import java.util.UUID;
  * creates BluetoothSocket.
  */
 
-public class BluetoothServer extends Thread  implements BlutoothConstants{
+public class BluetoothServer extends Thread  implements BluetoothConstants {
 
     private final String TAG = "DEBUG: "+BluetoothServer.class.getSimpleName();
 
@@ -33,25 +28,18 @@ public class BluetoothServer extends Thread  implements BlutoothConstants{
     private BluetoothAdapter mBluetoothAdapter;
     private Messenger mMessenger;
     private BluetoothDevice mConnectedDevice;
-    private Context mContext;
-    private PlayerListArrayAdapter mListArrayAdapter;
     private ArrayList<BluetoothSocket> mSocketArrayList;
 
     /**
      * BluetoothServer constructor
      * @param messenger to bluetooth manager
      * @param socketArrayList
-     * @param listArrayAdapter
      */
-    public BluetoothServer(Context context, Messenger messenger,
-                           ArrayList<BluetoothSocket> socketArrayList,
-                           PlayerListArrayAdapter listArrayAdapter) {
+    public BluetoothServer(Messenger messenger, ArrayList<BluetoothSocket> socketArrayList) {
 
         // Use messenger to update bluetooth manger
         this.mMessenger = messenger;
-        this.mContext = context;
         this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        this.mListArrayAdapter = listArrayAdapter;
         this.mSocketArrayList = socketArrayList;
         this.mConnectedDevice = null;
 
@@ -103,8 +91,7 @@ public class BluetoothServer extends Thread  implements BlutoothConstants{
 
         if (deviceName != null && bluetoothSocket != null){
             mSocketArrayList.add(bluetoothSocket);
-            mListArrayAdapter.add(deviceName);
-            sendMessageToManager(DEVICE_ADDED);
+            sendMessageToService(DEVICE_ADDED,deviceName);
         }
 
     }
@@ -121,14 +108,18 @@ public class BluetoothServer extends Thread  implements BlutoothConstants{
     }
 
     /**
-     * Send message to activity
+     * Send message to service
      * @param msg message type
      */
-    private void sendMessageToManager(int msg)  {
+    private void sendMessageToService(int msg, String content)  {
         try {
-            mMessenger.send(Message.obtain(null, msg));
+            Bundle bundle = new Bundle();
+            bundle.putString("message", content);
+            Message message = Message.obtain(null, msg);
+            message.setData(bundle);
+            mMessenger.send(message);
         } catch (RemoteException e) {
-            Log.e(TAG, "Problem with sendMessageToManager ");
+            Log.e(TAG, "Problem with sendMessageToService ");
         }
     }
 

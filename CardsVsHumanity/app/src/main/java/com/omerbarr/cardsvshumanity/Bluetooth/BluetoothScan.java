@@ -19,7 +19,7 @@ import android.util.Log;
  * advertisement
  */
 
-public class BluetoothScan implements BlutoothConstants{
+public class BluetoothScan implements BluetoothConstants {
 
     private final String TAG = "RELAY_DEBUG: "+BluetoothScan.class.getSimpleName();
 
@@ -55,12 +55,16 @@ public class BluetoothScan implements BlutoothConstants{
         Log.e(TAG, "finish Discovery ");
     }
 
+    public void close(){
+        stopScan();
+        mContext.unregisterReceiver(mBroadcastReceiver);
+    }
 
     /**
-     * Send message to activity
+     * Send message to service
      * @param msg message type
      */
-    private void sendMessageToManager(int msg)  {
+    private void sendMessageToService(int msg)  {
         try {
             mMessenger.send(Message.obtain(null, msg));
         } catch (RemoteException e) {
@@ -96,8 +100,7 @@ public class BluetoothScan implements BlutoothConstants{
                                     isDeviceFound = true;
                                     Log.e(TAG, "ACTION_FOUND " + device.getName());
                                     stopScan();
-                                    sendMessageToManager(DEVICE_CONNECTED);
-                                    // todo create class connected;
+                                    sendMessageToService(DEVICE_FOUND);
                                 }
                             }
                             break;
@@ -106,6 +109,4 @@ public class BluetoothScan implements BlutoothConstants{
             };
             mContext.registerReceiver(mBroadcastReceiver, mFilter);
     }
-
-
 }

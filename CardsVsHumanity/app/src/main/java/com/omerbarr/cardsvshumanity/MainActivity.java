@@ -9,6 +9,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService;
+
 public class MainActivity extends AppCompatActivity {
 
 

@@ -1,6 +1,9 @@
 package com.omerbarr.cardsvshumanity;
 
-import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
@@ -14,18 +17,24 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothScan;
-import com.omerbarr.cardsvshumanity.Bluetooth.BlutoothConstants;
+import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants;
+import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService;
 
-public class JoinGameActivity extends AppCompatActivity implements View.OnClickListener , BlutoothConstants {
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.KILL_SERVICE;
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.SET_MANAGER;
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.START_SEARCH;
+import static com.omerbarr.cardsvshumanity.CreateGameActivity.ADD_DEVICE_TO_LIST;
+
+public class JoinGameActivity extends AppCompatActivity implements View.OnClickListener , BluetoothConstants {
 
     private final String TAG = "DEBUG: "+JoinGameActivity.class.getSimpleName();
+
+    public static final String UPDATE_UI_FOUND_DEVICE = "cardsvshumanity.BroadcastReceiver.UPDATE_UI_FOUND_DEVICE";
 
     // Views
     private EditText mPlayerName;
@@ -36,8 +45,13 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
     private TextView mWaitingSign;
     private ProgressBar mProgressBar;
 
-    // Handler for all incoming messages from BL classes
-    private final Messenger mMessenger = new Messenger(new IncomingHandler());
+    //post delay handler
+    private Handler mHandler;
+
+    // General BroadcastReceiver
+    private BroadcastReceiver mBroadcastReceiver;
+    private IntentFilter mFilter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +74,33 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
         mProgressBar.setVisibility(View.GONE);
         mWaitingSign = (TextView) findViewById(R.id.text_waiting);
         mWaitingSign.setVisibility(View.GONE);
+
+
+        startService(new Intent(JoinGameActivity.this,BluetoothService.class));
+
+        createGeneralBroadcastReceiver();
+
+        mHandler = new Handler();
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // BroadCast that i'm manager to Service
+                Intent msgToService = new Intent(SET_MANAGER);
+                msgToService.putExtra("isManager",false);
+                sendBroadcast(msgToService);
+            }
+        },200);
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        unregisterReceiver(mBroadcastReceiver);
+        // BroadCast kill service to Service
+        Intent msgToService = new Intent(KILL_SERVICE);
+        msgToService.putExtra("isManager",true);
+        sendBroadcast(msgToService);
     }
 
     @Override
@@ -99,9 +140,10 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void startSearch() {
-        BluetoothScan  bluetoothScan = new BluetoothScan(this,
-                mGameCode.getText().toString().trim(),mMessenger);
-        bluetoothScan.startScan();
+        // send device name to activity to add to list
+        Intent msgToService = new Intent(START_SEARCH);
+        msgToService.putExtra("code",mGameCode.getText().toString().trim());
+        sendBroadcast(msgToService);
     }
 
     private boolean validateInput() {
@@ -125,23 +167,28 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
         window.setStatusBarColor(ContextCompat.getColor(this,R.color.statusBarColor));
     }
 
-    /**
-     * Handler of incoming messages from one of the BL classes
-     */
-    class IncomingHandler extends Handler {
 
+    private void createGeneralBroadcastReceiver() {
 
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case DEVICE_CONNECTED:
-                    Log.e(TAG, "DEVICE_CONNECTED");
-                    mConnectedSign.setVisibility(View.VISIBLE);
-                    mWaitingSign.setVisibility(View.VISIBLE);
-                    break;
-                default:
-                    super.handleMessage(msg);
+        mFilter = new IntentFilter();
+        mFilter.addAction(UPDATE_UI_FOUND_DEVICE);
+
+        mBroadcastReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                String action = intent.getAction();
+
+                switch (action){
+                    // When incoming message received
+                    case UPDATE_UI_FOUND_DEVICE:
+                        mConnectedSign.setVisibility(View.VISIBLE);
+                        mWaitingSign.setVisibility(View.VISIBLE);
+                        break;
+                }
             }
-        }
+        };
+        registerReceiver(mBroadcastReceiver, mFilter);
     }
 }

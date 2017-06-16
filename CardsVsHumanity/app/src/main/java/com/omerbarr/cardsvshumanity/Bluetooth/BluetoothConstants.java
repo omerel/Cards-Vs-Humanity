@@ -2,7 +2,7 @@ package com.omerbarr.cardsvshumanity.Bluetooth;
 
 import java.util.UUID;
 
-public interface BlutoothConstants {
+public interface BluetoothConstants {
 
     // inner interface
     int SECOND = 1000;
@@ -16,7 +16,8 @@ public interface BlutoothConstants {
 
     int DEVICE_ADDED = 111;
 
-    int DEVICE_CONNECTED = 112;
+    int DEVICE_FOUND = 112;
+
 
 
 
