@@ -38,8 +38,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        goToGameActivity();
     }
 
+
+
+    private void goToGameActivity() {
+        Intent intent = new Intent(getApplicationContext(), GameActivity.class);
+        startActivity(intent);
+        overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+    }
 
     private void goToJoinGameActivity() {
         Intent intent = new Intent(getApplicationContext(), JoinGameActivity.class);

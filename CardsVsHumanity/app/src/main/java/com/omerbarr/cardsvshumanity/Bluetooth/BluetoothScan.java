@@ -21,7 +21,7 @@ import android.util.Log;
 
 public class BluetoothScan implements BluetoothConstants {
 
-    private final String TAG = "RELAY_DEBUG: "+BluetoothScan.class.getSimpleName();
+    private final String TAG = "DEBUG: "+BluetoothScan.class.getSimpleName();
 
     private BluetoothAdapter mBluetoothAdapter;
     private BroadcastReceiver mBroadcastReceiver;
@@ -30,7 +30,7 @@ public class BluetoothScan implements BluetoothConstants {
     private String mGameCode;
     private Context mContext;
     private Messenger mMessenger;
-
+    private BluetoothDevice mBluetoothDevice;
 
     public BluetoothScan(Context context,String gameCode,Messenger messenger) {
         this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -60,6 +60,7 @@ public class BluetoothScan implements BluetoothConstants {
         mContext.unregisterReceiver(mBroadcastReceiver);
     }
 
+    public BluetoothDevice getDevice(){return mBluetoothDevice;}
     /**
      * Send message to service
      * @param msg message type
@@ -90,15 +91,15 @@ public class BluetoothScan implements BluetoothConstants {
                         // When discovery finds a device
                         case BluetoothDevice.ACTION_FOUND:
                             // Get the BluetoothDevice object from the Intent
-                            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                            Log.e(TAG, "found device: "+device.getName() );
+                            mBluetoothDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                            Log.e(TAG, "found device: "+mBluetoothDevice.getName() );
                             String[] split = null;
-                            if (device.getName() != null)
-                                split = device.getName().split("_");
+                            if (mBluetoothDevice.getName() != null)
+                                split = mBluetoothDevice.getName().split("_");
                             if (split != null && split.length > 0) {
                                 if (split[0].equals(mGameCode)) {
                                     isDeviceFound = true;
-                                    Log.e(TAG, "ACTION_FOUND " + device.getName());
+                                    Log.e(TAG, "ACTION_FOUND " + mBluetoothDevice.getName());
                                     stopScan();
                                     sendMessageToService(DEVICE_FOUND);
                                 }

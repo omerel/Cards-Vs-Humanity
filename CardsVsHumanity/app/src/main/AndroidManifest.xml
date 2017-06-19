@@ -25,21 +25,28 @@
             </receiver>
         </service>
 
-        <activity android:name=".MainActivity"
-            android:theme="@style/AppThemeNoTitle"
-            android:screenOrientation="portrait">
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoTitle">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".CreateGameActivity"
-            android:theme="@style/AppTheme"
-            android:screenOrientation="portrait"/>
-        <activity android:name=".JoinGameActivity"
-            android:theme="@style/AppTheme"
-            android:screenOrientation="portrait"/>
+        <activity
+            android:name=".CreateGameActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".JoinGameActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
+        <activity android:name=".GameActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeNoTitle">
+        </activity>
     </application>
 
 </manifest>

@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.KILL_SERVICE;
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.OPEN_SEVER;
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.SET_MANAGER;
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.START_GAME;
 
 public class CreateGameActivity extends AppCompatActivity implements View.OnClickListener , BluetoothConstants {
 
@@ -62,8 +63,6 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
     private String mGamecode;
 
     private BluetoothAdapter mBluetoothAdapter;
-    private String mDeviceOldName;
-
 
     // General BroadcastReceiver
     private BroadcastReceiver mBroadcastReceiver;
@@ -183,8 +182,12 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
 
                 break;
             case R.id.button_start_game:
-                if(mListArrayAdapter.getCount() >= 2)
-                    Toast.makeText(this,"Start game",Toast.LENGTH_SHORT).show();
+                if(mListArrayAdapter.getCount() >= 2) {
+                    Toast.makeText(this, "Start game", Toast.LENGTH_SHORT).show();
+                    // BroadCast start game to Service
+                    Intent msgToService = new Intent(START_GAME);
+                    sendBroadcast(msgToService);
+                }
                 else
                     Toast.makeText(this,"You need at least 2 players to start the game ",Toast.LENGTH_SHORT).show();
 
@@ -200,7 +203,6 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
 
     private void startPublish() {
 
-        mDeviceOldName = mBluetoothAdapter.getName();
         mBluetoothAdapter.setName(mGamecode+"_"+mPlayerName.getText().toString());
         beDiscoverable();
         sendBroadcast(new Intent(OPEN_SEVER));
@@ -221,7 +223,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         if (mBluetoothAdapter != null){
             Intent discoverableIntent = new
                     Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,120);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,240);
             discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             this.startActivity(discoverableIntent);
         }
@@ -242,9 +244,9 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
                 switch (action){
                     // When incoming message received
                     case ADD_DEVICE_TO_LIST:
+                        Log.e(TAG,"ADD_DEVICE_TO_LIST");
                         String deviceName = intent.getStringExtra("name");
                         mListArrayAdapter.add("Player "+(mPlayersArrayList.size()+1)+": "+deviceName);
-                        Log.e(TAG,"ADD_DEVICE_TO_LIST");
                         break;
                 }
             }

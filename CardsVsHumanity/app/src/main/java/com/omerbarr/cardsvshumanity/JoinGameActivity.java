@@ -1,5 +1,6 @@
 package com.omerbarr.cardsvshumanity;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -35,6 +36,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
     private final String TAG = "DEBUG: "+JoinGameActivity.class.getSimpleName();
 
     public static final String UPDATE_UI_FOUND_DEVICE = "cardsvshumanity.BroadcastReceiver.UPDATE_UI_FOUND_DEVICE";
+    public static final String CMD_START_GAME = "cardsvshumanity.BroadcastReceiver.CMD_START_GAME";
 
     // Views
     private EditText mPlayerName;
@@ -52,6 +54,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
     private BroadcastReceiver mBroadcastReceiver;
     private IntentFilter mFilter;
 
+    private BluetoothAdapter mBluetoothAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +78,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
         mWaitingSign = (TextView) findViewById(R.id.text_waiting);
         mWaitingSign.setVisibility(View.GONE);
 
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         startService(new Intent(JoinGameActivity.this,BluetoothService.class));
 
@@ -127,6 +131,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
                     mGameCode.setEnabled(false);
                     mJoinButton.setEnabled(false);
                     mProgressBar.setVisibility(View.VISIBLE);
+                    mBluetoothAdapter.setName(mPlayerName.getText().toString().trim());
                     startSearch();
                 }
                 else{
@@ -172,6 +177,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
 
         mFilter = new IntentFilter();
         mFilter.addAction(UPDATE_UI_FOUND_DEVICE);
+        mFilter.addAction(CMD_START_GAME);
 
         mBroadcastReceiver = new BroadcastReceiver() {
 
@@ -186,9 +192,21 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
                         mConnectedSign.setVisibility(View.VISIBLE);
                         mWaitingSign.setVisibility(View.VISIBLE);
                         break;
+
+                    case CMD_START_GAME:
+                        String string = intent.getStringExtra("start_game");
+                        Toast.makeText(getApplicationContext(),string,Toast.LENGTH_LONG).show();
+                        goToGameActivity();
+                        break;
                 }
             }
         };
         registerReceiver(mBroadcastReceiver, mFilter);
+    }
+
+    private void goToGameActivity() {
+        Intent intent = new Intent(getApplicationContext(), GameActivity.class);
+        startActivity(intent);
+        overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
     }
 }

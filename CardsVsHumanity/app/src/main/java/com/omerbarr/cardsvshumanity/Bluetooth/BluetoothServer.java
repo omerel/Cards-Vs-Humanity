@@ -64,26 +64,28 @@ public class BluetoothServer extends Thread  implements BluetoothConstants {
         BluetoothSocket socket = null;
         // Keep listening until exception occurs or a socket is returned
         while (true) {
-            try {
-                Log.e(TAG, "Waiting to mmServerSocket.accept() ");
-                socket = mmServerSocket.accept();
-                Log.e(TAG, "SUCCESSFULLY CONNECTED");
-            } catch (IOException e) {
-                Log.e(TAG, "Problem with mmServerSocket.accept()  IOException:"+e.getMessage());
-                break;
-            }catch (NullPointerException e){
-                Log.e(TAG, "Problem with mmServerSocket.accept() [null] ");
-                break;
+            if (mSocketArrayList.size() < 5) {
+                try {
+                    Log.e(TAG, "Waiting to mmServerSocket.accept() ");
+                    socket = mmServerSocket.accept();
+                    Log.e(TAG, "SUCCESSFULLY CONNECTED");
+                } catch (IOException e) {
+                    Log.e(TAG, "Problem with mmServerSocket.accept()  IOException:" + e.getMessage());
+                    break;
+                } catch (NullPointerException e) {
+                    Log.e(TAG, "Problem with mmServerSocket.accept() [null] ");
+                    break;
+                }
+                // If a connection was accepted
+                if (socket != null) {
+                    // get connected device
+                    mConnectedDevice = socket.getRemoteDevice();
+                    String deviceName = getDeviceName(mConnectedDevice);
+                    addDeviceToGame(socket, deviceName);
+                }
+                // todo break to close the thread
+                //break;
             }
-            // If a connection was accepted
-            if (socket != null) {
-                // get connected device
-                mConnectedDevice = socket.getRemoteDevice();
-                String deviceName = getDeviceName(mConnectedDevice);
-                addDeviceToGame(socket,deviceName);
-            }
-            // todo break to close the thread
-            break;
         }
     }
 
@@ -98,13 +100,9 @@ public class BluetoothServer extends Thread  implements BluetoothConstants {
 
     private String getDeviceName(BluetoothDevice mConnectedDevice) {
 
-        String[] split = null;
         if (mConnectedDevice.getName() != null)
-            split = mConnectedDevice.getName().split("_");
-        if (split != null && split.length > 0) {
-            return split[1];
-        }
-        return null;
+            return mConnectedDevice.getName();
+        return "unknown player";
     }
 
     /**

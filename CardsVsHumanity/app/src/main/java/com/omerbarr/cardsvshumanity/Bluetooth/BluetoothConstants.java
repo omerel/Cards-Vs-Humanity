@@ -18,6 +18,15 @@ public interface BluetoothConstants {
 
     int DEVICE_FOUND = 112;
 
+    int FAILED_CONNECTING_TO_DEVICE = 113;
+
+    int SUCCEED_CONNECTING_TO_DEVICE = 114;
+
+    int READ_PACKET = 115;
+
+    int FAILED_DURING_RECEIVE_PACKET = 116;
+
+    int FAILED_DURING_WRITE_PACKET = 117;
 
 
 

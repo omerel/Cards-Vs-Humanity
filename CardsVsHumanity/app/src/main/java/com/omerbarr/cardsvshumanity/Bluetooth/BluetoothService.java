@@ -2,6 +2,7 @@ package com.omerbarr.cardsvshumanity.Bluetooth;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,6 +19,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.omerbarr.cardsvshumanity.BusinessLogic.GameManager;
+import com.omerbarr.cardsvshumanity.BusinessLogic.PlayerManager;
+
+import java.io.IOException;
 import java.util.ArrayList;
 
 import static com.omerbarr.cardsvshumanity.CreateGameActivity.ADD_DEVICE_TO_LIST;
@@ -29,8 +34,9 @@ import static com.omerbarr.cardsvshumanity.JoinGameActivity.UPDATE_UI_FOUND_DEVI
 
 public class BluetoothService extends Service implements BluetoothConstants{
 
-    private final String TAG = "RELAY_DEBUG: "+ BluetoothService.class.getSimpleName();
+    private final String TAG = "DEBUG: "+ BluetoothService.class.getSimpleName();
     public static final String KILL_SERVICE = "cardsvshumanity.BroadcastReceiver.KILL_SERVICE";
+    public static final String START_GAME = "cardsvshumanity.BroadcastReceiver.START_GAME";
     public static final String SET_MANAGER = "cardsvshumanity.BroadcastReceiver.SET_MANAGER";
     public static final String OPEN_SEVER = "cardsvshumanity.BroadcastReceiver.OPEN_SEVER";
     public static final String START_SEARCH = "cardsvshumanity.BroadcastReceiver.START_SEARCH";
@@ -43,14 +49,26 @@ public class BluetoothService extends Service implements BluetoothConstants{
     private BroadcastReceiver mBroadcastReceiver;
     private IntentFilter mFilter;
 
+    BluetoothDevice mFoundDevice;
+    private String mGameCode;
+
 
     // List of all connected devices
     private ArrayList<BluetoothSocket> mSocketArrayList;
+    private ArrayList<String> mPlayersNameArrayList;
 
     // Handler for all incoming messages from BL classes
     private final Messenger mMessenger = new Messenger(new IncomingHandler());
 
     private BluetoothScan  mBluetoothScan;
+    private BluetoothClient mBluetoothClient;
+
+    // player
+    private PlayerManager mPlayerManager;
+
+    // manager
+    private GameManager mGameManager;
+
 
 
     @Override
@@ -63,6 +81,15 @@ public class BluetoothService extends Service implements BluetoothConstants{
         // set socket list
         mSocketArrayList = new ArrayList<>();
         mSocketArrayList.add(null);// my socket will be null
+        // initial players name and set  my name
+        mPlayersNameArrayList = new ArrayList<>();
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        String[] name = bluetoothAdapter.getName().split("_");
+        if (name != null && name.length > 1)
+            mPlayersNameArrayList.add(name[1]);
+        else
+            mPlayersNameArrayList.add("manager");
+
 
         return  START_NOT_STICKY;
     }
@@ -107,6 +134,7 @@ public class BluetoothService extends Service implements BluetoothConstants{
         mFilter.addAction(SET_MANAGER);
         mFilter.addAction(OPEN_SEVER);
         mFilter.addAction(START_SEARCH);
+        mFilter.addAction(START_GAME);
         mFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         mFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
 
@@ -144,10 +172,14 @@ public class BluetoothService extends Service implements BluetoothConstants{
                         }
                         break;
                     case START_SEARCH:
-                        String code = intent.getStringExtra("code");
-                        Log.e(TAG,"START_SEARCH for code: "+code);
-                        mBluetoothScan = new BluetoothScan(getApplicationContext(),code,mMessenger);
+                        mGameCode= intent.getStringExtra("code");
+                        Log.e(TAG,"START_SEARCH for code: "+mGameCode);
+                        mBluetoothScan = new BluetoothScan(getApplicationContext(),mGameCode,mMessenger);
                         mBluetoothScan.startScan();
+                        break;
+                    case START_GAME:
+                        mGameManager = new GameManager(mSocketArrayList,mPlayersNameArrayList,
+                                mMessenger,getApplicationContext());
                         break;
                 }
             }
@@ -159,6 +191,23 @@ public class BluetoothService extends Service implements BluetoothConstants{
      * Kill service
      */
     private void killService(){
+
+        // close sockets
+        if (manager){
+           for(int i = 0; i < mSocketArrayList.size(); i++){
+               if (mSocketArrayList.get(i) != null)
+                   try {
+                       mSocketArrayList.get(i).close();
+                   } catch (IOException e) {
+                       e.printStackTrace();
+                   }
+           }
+        }
+        else {
+            //close socket if exist
+            if (mBluetoothClient != null)
+                mBluetoothClient.cancel();
+        }
         // unregisterReceiver
         if (mBroadcastReceiver != null)
             unregisterReceiver(mBroadcastReceiver);
@@ -194,9 +243,24 @@ public class BluetoothService extends Service implements BluetoothConstants{
                     break;
                 case DEVICE_FOUND:
                     Log.e(TAG, "DEVICE_FOUND");
-                    // todo get device and close the scan
+                    mFoundDevice = mBluetoothScan.getDevice();
+                    mBluetoothScan.close();
+                    mBluetoothClient = new BluetoothClient(mMessenger,mFoundDevice);
+                    mBluetoothClient.start();
+                    break;
+
+                case FAILED_CONNECTING_TO_DEVICE:
+                    Log.e(TAG, "FAILED_CONNECTING_TO_DEVICE");
+                    Log.e(TAG,"START_SEARCH for code: "+mGameCode);
+                    mBluetoothScan = new BluetoothScan(getApplicationContext(),mGameCode,mMessenger);
+                    mBluetoothScan.startScan();
+                    break;
+
+                case SUCCEED_CONNECTING_TO_DEVICE:
+                    Log.e(TAG, "SUCCEED_CONNECTING_TO_DEVICE");
                     // connect to device
                     sendBroadcast(new Intent(UPDATE_UI_FOUND_DEVICE));
+                    mPlayerManager = new PlayerManager(mBluetoothClient.getBluetoothSocket(),mMessenger,getApplicationContext());
                     break;
                 default:
                     super.handleMessage(msg);
