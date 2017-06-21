@@ -1,25 +1,28 @@
 package com.omerbarr.cardsvshumanity.BusinessLogic;
 
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
 
-import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothClient;
 import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConnected;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
-import static com.omerbarr.cardsvshumanity.JoinGameActivity.CMD_START_GAME;
+import static com.omerbarr.cardsvshumanity.JoinGameActivity.BROAD_CAST_START_GAME;
 
 /**
  * Created by omer on 15/06/2017.
  */
 
 public class PlayerManager implements GameCommandsConstants {
+
+    public static final String BROAD_CAST_ACK_START_GAME = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_ACK_START_GAME";
 
     private final String TAG = "DEBUG: "+PlayerManager.class.getSimpleName();
 
@@ -30,14 +33,24 @@ public class PlayerManager implements GameCommandsConstants {
     private Messenger mServiceMessenger;
     private Context mServiceContext;
 
+    // Player BroadcastReceiver
+    private BroadcastReceiver mBroadcastReceiver;
+    private IntentFilter mFilter;
+
 
     public PlayerManager(BluetoothSocket mBluetoothSocket, Messenger mServiceMessenger, Context mServiceContext) {
         this.mBluetoothSocket = mBluetoothSocket;
         this.mServiceMessenger = mServiceMessenger;
         this.mServiceContext = mServiceContext;
 
-        mBluetoothConnected = new BluetoothConnected(mBluetoothSocket,mMessenger);
+        mBluetoothConnected = new BluetoothConnected(mBluetoothSocket,mMessenger,0);
         mBluetoothConnected.start();
+
+        createPlayerBroadcastReceiver();
+    }
+
+    public void close(){
+        mServiceContext.unregisterReceiver(mBroadcastReceiver);
     }
 
     /**
@@ -61,7 +74,7 @@ public class PlayerManager implements GameCommandsConstants {
         }
     }
 
-    private void sendPacket(int command,String jsonContent){
+    public void sendPacket(int command,String jsonContent){
         String jsonPacket = JsonConvertor.createJsonWithCommand(command,jsonContent);
         JsonConvertor.isJSONValid(jsonPacket);
         mBluetoothConnected.writePacket(jsonPacket);
@@ -74,12 +87,11 @@ public class PlayerManager implements GameCommandsConstants {
         try {
             int command = JsonConvertor.getCommand(jsonPacket);
             switch (command) {
-                case TESTING:
-                    Log.e(TAG, "TESTING");
+                case CMD_START_GAME:
+                    Log.e(TAG, "CMD_START_GAME");
                     String  string = JsonConvertor.getJsonContent(jsonPacket);
                     // send device name to activity to add to list
-                    Intent msgToService = new Intent(CMD_START_GAME);
-                    msgToService.putExtra("start_game",string);
+                    Intent msgToService = new Intent(BROAD_CAST_START_GAME);
                     mServiceContext.sendBroadcast(msgToService);
                     break;
             }
@@ -88,5 +100,30 @@ public class PlayerManager implements GameCommandsConstants {
         }
     }
 
+    /**
+     *  Player BroadcastReceiver
+     */
+    private void createPlayerBroadcastReceiver() {
+
+        mFilter = new IntentFilter();
+        mFilter.addAction(BROAD_CAST_ACK_START_GAME);
+        mBroadcastReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                String action = intent.getAction();
+
+                switch (action){
+                    // When incoming message received
+                    case BROAD_CAST_ACK_START_GAME:
+                        Log.e(TAG,"BROAD_CAST_ACK_START_GAME");
+                        sendPacket(ACK_START_GAME,"dummy");
+                        break;
+                }
+            }
+        };
+        mServiceContext.registerReceiver(mBroadcastReceiver, mFilter);
+    }
 
 }

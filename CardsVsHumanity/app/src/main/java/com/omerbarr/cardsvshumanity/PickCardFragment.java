@@ -2,10 +2,8 @@ package com.omerbarr.cardsvshumanity;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -24,7 +22,6 @@ import com.omerbarr.cardsvshumanity.BusinessLogic.Cards;
 import com.omerbarr.cardsvshumanity.Utils.CardAdapter;
 import com.omerbarr.cardsvshumanity.Utils.GridSpacingItemDecoration;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
@@ -38,14 +35,16 @@ import java.util.ArrayList;
 public class PickCardFragment extends Fragment {
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_CARDS = "cards";
+    private static final String ARG_WHITE_CARDS = "white_cards";
     private static final String ARG_NUM_OF_ANSWERS = "num_of_answers";
+    private static final String ARG_BLACK_CARD = "black_card";
 
     private View view;
 
     // views from activity parent
     private Button mButtonReset;
     private Button mButtonOk;
+    private TextView mTextBlackCard;
     private TextView mTextCounter;
     private TextView mTextGuidance;
 
@@ -60,6 +59,7 @@ public class PickCardFragment extends Fragment {
     // received parameters
     private int[] mReceivedCards;
     private int mNumOfAnswers;
+    private int mBlackCard;
 
     private OnFragmentInteractionListener mListener;
 
@@ -74,11 +74,12 @@ public class PickCardFragment extends Fragment {
      * @return A new instance of fragment PickCardFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static PickCardFragment newInstance(int[] receivedCards, int numOfAnswers) {
+    public static PickCardFragment newInstance(int[] receivedCards, int numOfAnswers, int blackCard) {
         PickCardFragment fragment = new PickCardFragment();
         Bundle args = new Bundle();
-        args.putIntArray(ARG_CARDS, receivedCards);
+        args.putIntArray(ARG_WHITE_CARDS, receivedCards);
         args.putInt(ARG_NUM_OF_ANSWERS, numOfAnswers);
+        args.putInt(ARG_BLACK_CARD, blackCard);
         fragment.setArguments(args);
         return fragment;
     }
@@ -86,25 +87,11 @@ public class PickCardFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        if (getArguments() != null) {
-//            mReceivedCards = getArguments().getIntArray(ARG_CARDS);
-//            mNumOfAnswers = getArguments().getInt(ARG_NUM_OF_ANSWERS);
-//        }
-
-        mReceivedCards =  new int[10];
-        mReceivedCards[0] = 14;
-        mReceivedCards[1] = 8;
-        mReceivedCards[2] = 20;
-        mReceivedCards[3] = 11;
-        mReceivedCards[4] = 2;
-        mReceivedCards[5] = 6;
-        mReceivedCards[6] = 9;
-        mReceivedCards[7] = 17;
-        mReceivedCards[8] = 5;
-        mReceivedCards[9] = 21;
-
-        mNumOfAnswers = 1;
-
+        if (getArguments() != null) {
+            mReceivedCards = getArguments().getIntArray(ARG_WHITE_CARDS);
+            mNumOfAnswers = getArguments().getInt(ARG_NUM_OF_ANSWERS);
+            mBlackCard = getArguments().getInt(ARG_BLACK_CARD);
+      }
 
         // initialize num of picked answers
         mAnswerCounter = 0;
@@ -112,6 +99,9 @@ public class PickCardFragment extends Fragment {
 
         mButtonReset = (Button) getActivity().findViewById(R.id.button_reset);
         mButtonOk  = (Button) getActivity().findViewById(R.id.button_ok);
+        mTextBlackCard = (TextView)getActivity().findViewById(R.id.czar_card);
+        String czarCard = Cards.BLACK_CARDS[mBlackCard];
+        mTextBlackCard.setText(czarCard);
         mTextCounter = (TextView) getActivity().findViewById(R.id.text_cards_picked);
         mTextCounter.setText(mAnswerCounter+"/"+mNumOfAnswers);
         mTextGuidance = (TextView) getActivity().findViewById(R.id.text_guidance);
@@ -137,7 +127,7 @@ public class PickCardFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (mAnswerCounter == mNumOfAnswers){
-                    // todo send result to activity
+                    onButtonPressed(mPickedanswers);
                 }
                 else{
                     Toast.makeText(getContext(),"You need to pick answers in order to send cards",Toast.LENGTH_LONG).show();
@@ -174,9 +164,9 @@ public class PickCardFragment extends Fragment {
     }
 
     // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
+    public void onButtonPressed(int[] pickedanswers) {
         if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+            mListener.onFragmentInteraction(pickedanswers);
         }
 
     }
@@ -209,8 +199,7 @@ public class PickCardFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+        void onFragmentInteraction(int[] pickedanswers);
     }
     /**
      * Converting dp to pixel

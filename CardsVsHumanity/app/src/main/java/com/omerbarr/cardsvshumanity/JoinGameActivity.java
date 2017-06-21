@@ -36,7 +36,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
     private final String TAG = "DEBUG: "+JoinGameActivity.class.getSimpleName();
 
     public static final String UPDATE_UI_FOUND_DEVICE = "cardsvshumanity.BroadcastReceiver.UPDATE_UI_FOUND_DEVICE";
-    public static final String CMD_START_GAME = "cardsvshumanity.BroadcastReceiver.CMD_START_GAME";
+    public static final String BROAD_CAST_START_GAME = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_START_GAME";
 
     // Views
     private EditText mPlayerName;
@@ -177,7 +177,7 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
 
         mFilter = new IntentFilter();
         mFilter.addAction(UPDATE_UI_FOUND_DEVICE);
-        mFilter.addAction(CMD_START_GAME);
+        mFilter.addAction(BROAD_CAST_START_GAME);
 
         mBroadcastReceiver = new BroadcastReceiver() {
 
@@ -193,10 +193,8 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
                         mWaitingSign.setVisibility(View.VISIBLE);
                         break;
 
-                    case CMD_START_GAME:
-                        String string = intent.getStringExtra("start_game");
-                        Toast.makeText(getApplicationContext(),string,Toast.LENGTH_LONG).show();
-                        goToGameActivity();
+                    case BROAD_CAST_START_GAME:
+                        goToGameActivity(false);
                         break;
                 }
             }
@@ -204,8 +202,9 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
         registerReceiver(mBroadcastReceiver, mFilter);
     }
 
-    private void goToGameActivity() {
+    private void goToGameActivity(boolean czar) {
         Intent intent = new Intent(getApplicationContext(), GameActivity.class);
+        intent.putExtra("czar",czar);
         startActivity(intent);
         overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
     }

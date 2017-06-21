@@ -41,6 +41,8 @@ public class BluetoothService extends Service implements BluetoothConstants{
     public static final String OPEN_SEVER = "cardsvshumanity.BroadcastReceiver.OPEN_SEVER";
     public static final String START_SEARCH = "cardsvshumanity.BroadcastReceiver.START_SEARCH";
 
+
+
     private boolean manager;
     private PowerManager.WakeLock mWakeLock;
     // Power manager to keep service wake when phone locked
@@ -192,8 +194,11 @@ public class BluetoothService extends Service implements BluetoothConstants{
      */
     private void killService(){
 
+
         // close sockets
         if (manager){
+            // unregisterReceiver
+            mGameManager.close();
            for(int i = 0; i < mSocketArrayList.size(); i++){
                if (mSocketArrayList.get(i) != null)
                    try {
@@ -204,6 +209,8 @@ public class BluetoothService extends Service implements BluetoothConstants{
            }
         }
         else {
+            // unregisterReceiver
+            mPlayerManager.close();
             //close socket if exist
             if (mBluetoothClient != null)
                 mBluetoothClient.cancel();
@@ -211,6 +218,7 @@ public class BluetoothService extends Service implements BluetoothConstants{
         // unregisterReceiver
         if (mBroadcastReceiver != null)
             unregisterReceiver(mBroadcastReceiver);
+
         stopSelf();
     }
 

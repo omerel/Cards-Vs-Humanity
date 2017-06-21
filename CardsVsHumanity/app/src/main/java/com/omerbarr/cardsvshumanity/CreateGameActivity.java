@@ -42,6 +42,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
     private final String TAG = "DEBUG: "+CreateGameActivity.class.getSimpleName();
 
     public static final String ADD_DEVICE_TO_LIST = "cardsvshumanity.BroadcastReceiver.ADD_DEVICE_TO_LIST";
+    public static final String BROAD_CAST_START_GAME = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_START_GAME";
 
 
     // Views
@@ -233,6 +234,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
 
         mFilter = new IntentFilter();
         mFilter.addAction(ADD_DEVICE_TO_LIST);
+        mFilter.addAction(BROAD_CAST_START_GAME);
 
         mBroadcastReceiver = new BroadcastReceiver() {
 
@@ -248,10 +250,20 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
                         String deviceName = intent.getStringExtra("name");
                         mListArrayAdapter.add("Player "+(mPlayersArrayList.size()+1)+": "+deviceName);
                         break;
+                    case BROAD_CAST_START_GAME:
+                        goToGameActivity(true);
+                        break;
                 }
             }
         };
         registerReceiver(mBroadcastReceiver, mFilter);
     }
 
+
+    private void goToGameActivity(boolean czar) {
+        Intent intent = new Intent(getApplicationContext(), GameActivity.class);
+        intent.putExtra("czar",czar);
+        startActivity(intent);
+        overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+    }
 }

@@ -1,11 +1,15 @@
 package com.omerbarr.cardsvshumanity.BusinessLogic;
 
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConnected;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
@@ -13,6 +17,7 @@ import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 import java.util.ArrayList;
 
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
+import static com.omerbarr.cardsvshumanity.CreateGameActivity.BROAD_CAST_START_GAME;
 
 /**
  * Created by omer on 15/06/2017.
@@ -31,26 +36,77 @@ public class GameManager implements  GameCommandsConstants {
     private final Messenger mMessenger = new Messenger(new IncomingHandler());
     private Messenger mServiceMessenger;
     private Context mServiceContext;
+    private GameData mGameData;
 
-    public GameManager(ArrayList<BluetoothSocket> mSocketArrayList,
-                       ArrayList<String> mPlayersNameArrayList, Messenger mServiceMessenger,
-                       Context mServiceContext) {
-        this.mSocketArrayList = mSocketArrayList;
-        this.mPlayersNameArrayList = mPlayersNameArrayList;
-        this.mServiceMessenger = mServiceMessenger;
-        this.mServiceContext = mServiceContext;
+    // save last CMD that sent to devices
+    private String mLastJsonSent;
+    private int mLastCommandSent;
+    // every command that send will respond with ack if not the command will be send again
+    private boolean[] mAckStatus;
+    private Runnable mRunnable;
 
+    // handler
+    private Handler mHandler;
 
+    // Player BroadcastReceiver
+    private BroadcastReceiver mBroadcastReceiver;
+    private IntentFilter mFilter;
+
+    public GameManager(ArrayList<BluetoothSocket> socketArrayList,
+                       ArrayList<String> playersNameArrayList, Messenger serviceMessenger,
+                       Context serviceContext) {
+        this.mSocketArrayList = socketArrayList;
+        this.mPlayersNameArrayList = playersNameArrayList;
+        this.mServiceMessenger = serviceMessenger;
+        this.mServiceContext = serviceContext;
+        this.mGameData = new GameData(mPlayersNameArrayList);
+        this.mHandler = new Handler();
+        this.mAckStatus = new boolean[mSocketArrayList.size()];
         // initialize all devices
-        mBluetoothConnections = new BluetoothConnected[mSocketArrayList.size()-1];
-        for (int i = 0; i< mBluetoothConnections.length; i++){
-            mBluetoothConnections[i] = new BluetoothConnected(mSocketArrayList.get(i+1),mMessenger);
+        mBluetoothConnections = new BluetoothConnected[mSocketArrayList.size()];
+        mBluetoothConnections[0]= null; //manager
+        for (int i = 1; i< mBluetoothConnections.length; i++){
+            mBluetoothConnections[i] = new BluetoothConnected(mSocketArrayList.get(i),mMessenger,i);
             mBluetoothConnections[i].start();
         }
 
-        sendPacket(ALL_DEVICES,TESTING,"hello world");
+        // timer for device to respond
+        this.mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                for(int i = 0; i< mAckStatus.length; i++){
+                    if (!mAckStatus[i])
+                        sendPacket(i,mLastCommandSent,mLastJsonSent);
+                }
+                mHandler.postDelayed(mRunnable,MAX_TIME_FOR_RESPONED);
+            }
+        };
+
+        createGameBroadcastReceiver();
+
+        resetAckStatus();
+        mLastCommandSent = CMD_START_GAME;
+        mLastJsonSent = "dummy";
+
+        sendPacket(ALL_DEVICES,CMD_START_GAME,"dummy");
+        mHandler.postDelayed(mRunnable,MAX_TIME_FOR_RESPONED);
+
     }
 
+    public void close(){
+        mServiceContext.unregisterReceiver(mBroadcastReceiver);
+    }
+
+    private void resetAckStatus() {
+        mAckStatus[0] = true;
+        for (int i = 1; i < mSocketArrayList.size(); i++)
+            mAckStatus[i] = false;
+    }
+
+
+    private void startRound(){
+
+    }
     /**
      * Handler of incoming messages from one of the BL classes
      */
@@ -62,8 +118,9 @@ public class GameManager implements  GameCommandsConstants {
                 case READ_PACKET:
                     Log.e(TAG, "READ_PACKET");
                     String packet = msg.getData().getString("packet");
+                    int deviceId = msg.getData().getInt("id");
                     // update handshake with the new packet
-                    decodePacket(packet);
+                    decodePacket(packet,deviceId);
                     break;
 
                 default:
@@ -77,7 +134,7 @@ public class GameManager implements  GameCommandsConstants {
         String jsonPacket = JsonConvertor.createJsonWithCommand(command,jsonContent);
         JsonConvertor.isJSONValid(jsonPacket);
         if (deviceNumber == ALL_DEVICES){
-            for (int i = 0; i< mBluetoothConnections.length; i++)
+            for (int i = 1; i< mBluetoothConnections.length; i++)
                 mBluetoothConnections[i].writePacket(jsonPacket);
         }
         else
@@ -85,19 +142,56 @@ public class GameManager implements  GameCommandsConstants {
         Log.e(TAG,"JsonString sent size is : "+jsonContent.length());
     }
 
-    public void decodePacket(String jsonPacket){
+    public void decodePacket(String jsonPacket,int deviceId){
         Log.e(TAG,"JsonString received size is : "+jsonPacket.length());
         JsonConvertor.isJSONValid(jsonPacket);
         try {
             int command = JsonConvertor.getCommand(jsonPacket);
             switch (command) {
-                case TESTING:
-                    Log.e(TAG, "TESTING");
-
+                case ACK_START_GAME:
+                    Log.e(TAG, "ACK_START_GAME");
+                    mAckStatus[deviceId] = true;
+                    if(checkAllDevicesReceived()){
+                        // cancel timer
+                        mHandler.removeCallbacks(mRunnable);
+                        mServiceContext.sendBroadcast(new Intent(BROAD_CAST_START_GAME));
+                    }
                     break;
             }
         } catch (Exception e) {
             Log.e(TAG,"Error in decodePacket method,error-"+e.getMessage());
         }
+    }
+
+    private boolean checkAllDevicesReceived(){
+        boolean received = true;
+        for(int i = 0; i< mAckStatus.length; i++)
+            if (!mAckStatus[i])
+                received = false;
+        return  received;
+    }
+    /**
+     *  Player BroadcastReceiver
+     */
+    private void createGameBroadcastReceiver() {
+
+        mFilter = new IntentFilter();
+        mFilter.addAction("adsad");
+        mBroadcastReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                String action = intent.getAction();
+
+                switch (action){
+                    // When incoming message received
+                    case "sadsa":
+                        Log.e(TAG,"KILL_SERVICE");
+                        break;
+                }
+            }
+        };
+        mServiceContext.registerReceiver(mBroadcastReceiver, mFilter);
     }
 }

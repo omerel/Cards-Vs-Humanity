@@ -28,6 +28,7 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
     private final InputStream mmInStream;
     private final OutputStream mmOutStream;
 
+    private int myId;
     private boolean closedProperly;
 
     /**
@@ -35,9 +36,10 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
      * @param bluetoothSocket for transmit data between devices
      * @param messenger to bluetooth manager
      */
-    public BluetoothConnected(BluetoothSocket bluetoothSocket, Messenger messenger){
+    public BluetoothConnected(BluetoothSocket bluetoothSocket, Messenger messenger,int id){
         this.mBluetoothSocket = bluetoothSocket;
         this.mMessenger = messenger;
+        this.myId = id;
         InputStream tmpIn = null;
         OutputStream tmpOut = null;
 
@@ -166,6 +168,7 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
         // Send packet as a byte array
         Bundle bundle = new Bundle();
         bundle.putString("packet", packet);
+        bundle.putInt("id", myId);
         Message msg = Message.obtain(null, m);
         msg.setData(bundle);
         Log.e(TAG, "Packet sent to Manager ");

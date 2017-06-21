@@ -3,6 +3,7 @@ package com.omerbarr.cardsvshumanity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.net.Uri;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -12,11 +13,22 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
-public class GameActivity extends AppCompatActivity implements PickCardFragment.OnFragmentInteractionListener {
+import com.omerbarr.cardsvshumanity.BusinessLogic.GameCommandsConstants;
+
+public class GameActivity extends AppCompatActivity implements GameCommandsConstants, PickCardFragment.OnFragmentInteractionListener,WaitingToCzarFragment.OnFragmentInteractionListener {
 
 
+    final int PLAYER_MODE = 1;
+    final int CZAR_MODE = 2;
+    final int PLAYER_WAITING = 3;
+    final int CZAR_CZAR = 4;
+
+
+    private TextView mTextScore;
+    private TextView mRound;
     // current fragment
     private Fragment mFragment;
 
@@ -35,11 +47,19 @@ public class GameActivity extends AppCompatActivity implements PickCardFragment.
         mLoadingView = findViewById(R.id.loading_spinner);
 
         // Retrieve and cache the system's default "short" animation time.
-        mShortAnimationDuration = getResources().getInteger(
-                android.R.integer.config_longAnimTime);
+        mShortAnimationDuration = getResources().getInteger(android.R.integer.config_longAnimTime);
 
+        mTextScore = (TextView)findViewById(R.id.text_score);
+        mTextScore.setText(SCORE+0);
+        mRound = (TextView)findViewById(R.id.text_game_round);
+        mRound.setText(ROUND+1);
+
+        boolean isCzar = getIntent().getBooleanExtra("czar",false);
         // start
-        displayFragment();
+        if (isCzar)
+            displayFragment(CZAR_MODE);
+        else
+            displayFragment(PLAYER_WAITING);
     }
 
     private void changeStatusBarColor(){
@@ -53,11 +73,6 @@ public class GameActivity extends AppCompatActivity implements PickCardFragment.
 
         // finally change the color
         window.setStatusBarColor(ContextCompat.getColor(this,R.color.statusBarColor));
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 
     /**
@@ -96,12 +111,25 @@ public class GameActivity extends AppCompatActivity implements PickCardFragment.
     }
 
 
-    private void displayFragment() {
+    private void displayFragment(int mode) {
 
         //Initially hide the content view.
         mFragment = null;
         mContentView.setVisibility(View.INVISIBLE);
-        mFragment = PickCardFragment.newInstance(null,0);
+
+        switch (mode){
+            case PLAYER_MODE:
+                mFragment = PickCardFragment.newInstance(new int[]{1,14,22,6,8,7},1,13);
+                break;
+            case CZAR_MODE:
+                break;
+            case PLAYER_WAITING:
+                mFragment = WaitingToCzarFragment.newInstance();
+                break;
+            case CZAR_CZAR:
+                break;
+        }
+
         if (mFragment != null) {
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -109,5 +137,16 @@ public class GameActivity extends AppCompatActivity implements PickCardFragment.
             fragmentTransaction.commit();
         }
         crossfade(mShortAnimationDuration);
+    }
+
+
+    @Override
+    public void onFragmentInteraction(int[] pickedAnswers) {
+        Toast.makeText(this,"the answers is "+pickedAnswers[0],Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onFragmentInteraction(int cmd) {
+
     }
 }

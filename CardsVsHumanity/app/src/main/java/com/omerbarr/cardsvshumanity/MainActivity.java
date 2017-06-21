@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        goToGameActivity();
+        //goToGameActivity();
     }
 
 
