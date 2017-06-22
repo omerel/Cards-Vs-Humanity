@@ -10,6 +10,8 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.text.Html;
+import android.text.Spanned;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,12 +29,12 @@ import java.util.ArrayList;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link PickCardFragment.OnFragmentInteractionListener} interface
+ * {@link PickWhiteCardFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link PickCardFragment#newInstance} factory method to
+ * Use the {@link PickWhiteCardFragment#newPickWhiteCardFragment} factory method to
  * create an instance of this fragment.`sys
  */
-public class PickCardFragment extends Fragment {
+public class PickWhiteCardFragment extends Fragment {
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_WHITE_CARDS = "white_cards";
@@ -61,9 +63,12 @@ public class PickCardFragment extends Fragment {
     private int mNumOfAnswers;
     private int mBlackCard;
 
+    private String[] mCzarCard;
+    private final String SPACE = "_______";
+
     private OnFragmentInteractionListener mListener;
 
-    public PickCardFragment() {
+    public PickWhiteCardFragment() {
         // Required empty public constructor
     }
 
@@ -71,11 +76,11 @@ public class PickCardFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @return A new instance of fragment PickCardFragment.
+     * @return A new instance of fragment PickWhiteCardFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static PickCardFragment newInstance(int[] receivedCards, int numOfAnswers, int blackCard) {
-        PickCardFragment fragment = new PickCardFragment();
+    public static PickWhiteCardFragment newPickWhiteCardFragment(int[] receivedCards, int numOfAnswers, int blackCard) {
+        PickWhiteCardFragment fragment = new PickWhiteCardFragment();
         Bundle args = new Bundle();
         args.putIntArray(ARG_WHITE_CARDS, receivedCards);
         args.putInt(ARG_NUM_OF_ANSWERS, numOfAnswers);
@@ -98,10 +103,16 @@ public class PickCardFragment extends Fragment {
         mPickedanswers = new int[mNumOfAnswers];
 
         mButtonReset = (Button) getActivity().findViewById(R.id.button_reset);
+        mButtonReset.setEnabled(true);
+        mButtonReset.setAlpha((float) 1.0);
         mButtonOk  = (Button) getActivity().findViewById(R.id.button_ok);
+        mButtonOk.setEnabled(true);
+        mButtonOk.setAlpha((float) 1.0);
         mTextBlackCard = (TextView)getActivity().findViewById(R.id.czar_card);
         String czarCard = Cards.BLACK_CARDS[mBlackCard];
-        mTextBlackCard.setText(czarCard);
+        mCzarCard = czarCard.split("_");
+        mTextBlackCard.setText(getCzarCard(false));
+
         mTextCounter = (TextView) getActivity().findViewById(R.id.text_cards_picked);
         mTextCounter.setText(mAnswerCounter+"/"+mNumOfAnswers);
         mTextGuidance = (TextView) getActivity().findViewById(R.id.text_guidance);
@@ -127,7 +138,11 @@ public class PickCardFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (mAnswerCounter == mNumOfAnswers){
-                    onButtonPressed(mPickedanswers);
+                    mButtonOk.setEnabled(false);
+                    mButtonOk.setAlpha((float) 0.15);
+                    mButtonReset.setEnabled(false);
+                    mButtonReset.setAlpha((float) 0.15);
+                    mTextBlackCard.setText(getCzarCard(true));
                 }
                 else{
                     Toast.makeText(getContext(),"You need to pick answers in order to send cards",Toast.LENGTH_LONG).show();
@@ -142,7 +157,7 @@ public class PickCardFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         // Inflate the layout for this fragment
-        view = inflater.inflate(R.layout.fragment_pick_card, container, false);
+        view = inflater.inflate(R.layout.fragment_pick_white_card, container, false);
 
         // init search contacts view
         mCardRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view_card);
@@ -154,7 +169,7 @@ public class PickCardFragment extends Fragment {
 
         mCardArrayList = new ArrayList<>();
         for(int i = 0; i < mReceivedCards.length; i++  ){
-            mCardArrayList.add(Cards.WHITE_CARDS[mReceivedCards[i]]);
+            mCardArrayList.add(Cards.WHITE_CARDS[mReceivedCards[i]]+".");
         }
         mCardListAdapter = new CardListAdapter(mCardArrayList);
         mCardRecyclerView.setAdapter(mCardListAdapter);
@@ -163,12 +178,7 @@ public class PickCardFragment extends Fragment {
         return view;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(int[] pickedanswers) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(pickedanswers);
-        }
-
     }
 
     @Override
@@ -282,6 +292,34 @@ public class PickCardFragment extends Fragment {
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
         itemTouchHelper.attachToRecyclerView(mCardRecyclerView);
+    }
 
+    private Spanned getCzarCard(boolean withAnswers){
+
+        String text = "";
+        if(!withAnswers){
+            if (mCzarCard.length == 1)
+                text= mCzarCard[0]+": "+SPACE;
+            else{
+                for(int i =0 ;i<mCzarCard.length; i++){
+                    text+=mCzarCard[i];
+                    if (i != mCzarCard.length-1)
+                        text+=SPACE;
+                }
+            }
+        }
+        else{
+            if (mCzarCard.length == 1)
+                text =  mCzarCard[0]+": "+"<u><b>"+Cards.WHITE_CARDS[mPickedanswers[0]]+"</b></u>";
+            else{
+                for(int i =0 ;i<mCzarCard.length; i++){
+                    text+=mCzarCard[i];
+                    if (i != mCzarCard.length-1)
+                        text+="<u><b>"+Cards.WHITE_CARDS[mPickedanswers[i]]+"</b></u>";
+                }
+            }
+
+        }
+        return Html.fromHtml(text);
     }
 }

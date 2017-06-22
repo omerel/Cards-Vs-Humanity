@@ -17,6 +17,7 @@ public class GameData implements GameCommandsConstants {
     private ArrayList<String> mBlackCards;
     private ArrayList<String> mPlayersNameArrayList;
     private ArrayList<Integer>[] mPlayersCardsPull;
+    private int mPickedBlackCard;
 
     public GameData(ArrayList<String> playersNameArrayList) {
 
@@ -31,9 +32,13 @@ public class GameData implements GameCommandsConstants {
         mRound = 0;
         mCurrentCzar = -1;
         mWhiteCards = new ArrayList<>();
-        Collections.addAll(mWhiteCards, Cards.WHITE_CARDS);
+        for(int i = 0; i < Cards.WHITE_CARDS.length; i++ )
+            mWhiteCards.add(Cards.WHITE_CARDS[i]);
+       // Collections.addAll(mWhiteCards, Cards.WHITE_CARDS);
         mBlackCards = new ArrayList<>();
-        Collections.addAll(mBlackCards, Cards.BLACK_CARDS);
+        for(int i = 0; i < Cards.BLACK_CARDS.length; i++ )
+            mBlackCards.add(Cards.BLACK_CARDS[i]);
+       // Collections.addAll(mBlackCards, Cards.BLACK_CARDS);
         mPlayersCardsPull = new ArrayList[mPlayersNameArrayList.size()];
         for (int i=0; i < mPlayersCardsPull.length; i++)
             mPlayersCardsPull[i] = new ArrayList<>();
@@ -50,23 +55,27 @@ public class GameData implements GameCommandsConstants {
         return card;
     }
 
-    public int pickBlackCard(){
+    public int shuffleBlackCard(){
         int card = 0;
         if (mBlackCards.size() > 0) {
             Random random = new Random();
             card = random.nextInt(mBlackCards.size());
-            mBlackCards.remove(card);
         }
         return card;
+    }
+    public void pickBlackCard(int card){
+        mBlackCards.remove(card);
     }
 
     public void addScoreToPlayer(int playerIndex){
         mScoreTable[playerIndex]++;
     }
 
-    public int[] getScreTable(){return mScoreTable;}
+    public int[] getScoreTable(){return mScoreTable;}
 
     public int getRound(){return mRound;}
+
+    public int getCurrentCzar(){return mCurrentCzar;}
 
     public void spreadWhiteCardsToAllPlayers(){
 
@@ -81,16 +90,20 @@ public class GameData implements GameCommandsConstants {
         }
     }
 
+
+    public DataTransferred.RoundData getRoundData(){
+        return new DataTransferred.RoundData(mScoreTable,mRound,mCurrentCzar,mBlackCards,
+                mPlayersNameArrayList,mPlayersCardsPull);
+    }
+
     // returns the current czar
     public int startRound(){
+        spreadWhiteCardsToAllPlayers();
         mRound++;
         if(mCurrentCzar == mPlayersNameArrayList.size())
             mCurrentCzar = -1;
         mCurrentCzar++;
         return  mCurrentCzar;
     }
-
-
-
 
 }

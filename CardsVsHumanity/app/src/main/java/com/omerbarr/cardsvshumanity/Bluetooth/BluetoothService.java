@@ -85,14 +85,6 @@ public class BluetoothService extends Service implements BluetoothConstants{
         mSocketArrayList.add(null);// my socket will be null
         // initial players name and set  my name
         mPlayersNameArrayList = new ArrayList<>();
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        String[] name = bluetoothAdapter.getName().split("_");
-        if (name != null && name.length > 1)
-            mPlayersNameArrayList.add(name[1]);
-        else
-            mPlayersNameArrayList.add("manager");
-
-
         return  START_NOT_STICKY;
     }
 
@@ -180,6 +172,8 @@ public class BluetoothService extends Service implements BluetoothConstants{
                         mBluetoothScan.startScan();
                         break;
                     case START_GAME:
+                        String name = intent.getStringExtra("name");
+                        mPlayersNameArrayList.add(0,name);
                         mGameManager = new GameManager(mSocketArrayList,mPlayersNameArrayList,
                                 mMessenger,getApplicationContext());
                         break;
@@ -244,6 +238,7 @@ public class BluetoothService extends Service implements BluetoothConstants{
                     Log.e(TAG, "DEVICE_ADDED");
                     Toast.makeText(getApplicationContext(),"new player has joined the game",Toast.LENGTH_SHORT).show();
                     String name = msg.getData().getString("message");
+                    mPlayersNameArrayList.add(name);
                     // send device name to activity to add to list
                     Intent msgToService = new Intent(ADD_DEVICE_TO_LIST);
                     msgToService.putExtra("name",name);

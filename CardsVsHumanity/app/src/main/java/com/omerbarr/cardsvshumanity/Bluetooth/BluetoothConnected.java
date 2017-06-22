@@ -57,6 +57,8 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
         Log.e(TAG, "BluetoothConnected created");
     }
 
+    public int getMyId(){return myId;}
+
     // Start thread
     public void run() {
         Log.d(TAG, "Start Thread");
@@ -125,6 +127,8 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
             }
         }
     }
+
+    public void setId(int id){myId = id;}
 
     /**
      * Write to the connected OutStream.

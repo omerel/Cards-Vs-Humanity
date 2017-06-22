@@ -14,6 +14,8 @@ import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConnected;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_MODE;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_WAITING;
 import static com.omerbarr.cardsvshumanity.JoinGameActivity.BROAD_CAST_START_GAME;
 
 /**
@@ -22,7 +24,9 @@ import static com.omerbarr.cardsvshumanity.JoinGameActivity.BROAD_CAST_START_GAM
 
 public class PlayerManager implements GameCommandsConstants {
 
-    public static final String BROAD_CAST_ACK_START_GAME = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_ACK_START_GAME";
+    public static final String BROAD_CAST_ACK_WAITING = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_ACK_WAITING";
+    public static final String UPDATE_CZAR_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_CZAR_DATA";
+    public static final String UPDATE_PLAYERS_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_PLAYERS_DATA";
 
     private final String TAG = "DEBUG: "+PlayerManager.class.getSimpleName();
 
@@ -82,6 +86,7 @@ public class PlayerManager implements GameCommandsConstants {
     }
 
     public void decodePacket(String jsonPacket){
+        Intent intent;
         Log.e(TAG,"JsonString received size is : "+jsonPacket.length());
         JsonConvertor.isJSONValid(jsonPacket);
         try {
@@ -89,10 +94,31 @@ public class PlayerManager implements GameCommandsConstants {
             switch (command) {
                 case CMD_START_GAME:
                     Log.e(TAG, "CMD_START_GAME");
-                    String  string = JsonConvertor.getJsonContent(jsonPacket);
+                    String  idString = JsonConvertor.getJsonContent(jsonPacket);
+                    mBluetoothConnected.setId(Integer.valueOf(idString.trim()));
                     // send device name to activity to add to list
-                    Intent msgToService = new Intent(BROAD_CAST_START_GAME);
-                    mServiceContext.sendBroadcast(msgToService);
+                    intent = new Intent(BROAD_CAST_START_GAME);
+                    intent.putExtra("id",mBluetoothConnected.getMyId());
+                    mServiceContext.sendBroadcast(intent);
+                    sendPacket(ACK_START_GAME,"dummy");
+                    break;
+                case CMD_START_ROUND:
+                    Log.e(TAG, "CMD_START_GAME");
+                    String  jsonRoundData = JsonConvertor.getJsonContent(jsonPacket);
+                    // send device name to activity to add to list
+                    intent = new Intent(BROAD_CAST_PLAYER_WAITING);
+                    intent.putExtra("data",jsonRoundData);
+                    mServiceContext.sendBroadcast(intent);
+                    sendPacket(ACK_START_ROUND,"dummy");
+                    break;
+                case CMD_REVEAL_BLACK_CARD:
+                    Log.e(TAG, "CMD_REVEAL_BLACK_CARD");
+                    String  jsonCzarData = JsonConvertor.getJsonContent(jsonPacket);
+                    // send device name to activity to add to list
+                    intent = new Intent(BROAD_CAST_PLAYER_MODE);
+                    intent.putExtra("data",jsonCzarData);
+                    mServiceContext.sendBroadcast(intent);
+                    sendPacket(ACK_REVEAL_BLACK_CARD,"dummy");
                     break;
             }
         } catch (Exception e) {
@@ -106,7 +132,9 @@ public class PlayerManager implements GameCommandsConstants {
     private void createPlayerBroadcastReceiver() {
 
         mFilter = new IntentFilter();
-        mFilter.addAction(BROAD_CAST_ACK_START_GAME);
+        mFilter.addAction(BROAD_CAST_ACK_WAITING);
+        mFilter.addAction(UPDATE_CZAR_DATA);
+        mFilter.addAction(UPDATE_PLAYERS_DATA);
         mBroadcastReceiver = new BroadcastReceiver() {
 
             @Override
@@ -116,9 +144,15 @@ public class PlayerManager implements GameCommandsConstants {
 
                 switch (action){
                     // When incoming message received
-                    case BROAD_CAST_ACK_START_GAME:
-                        Log.e(TAG,"BROAD_CAST_ACK_START_GAME");
+                    case BROAD_CAST_ACK_WAITING:
+                        Log.e(TAG,"BROAD_CAST_ACK_WAITING");
                         sendPacket(ACK_START_GAME,"dummy");
+                        break;
+                    case UPDATE_CZAR_DATA:
+                        // send data to manager
+                        break;
+                    case UPDATE_PLAYERS_DATA:
+                        // send data to manager
                         break;
                 }
             }

@@ -8,6 +8,7 @@
     <color name="colorLine">#d9dcdb</color>
     <color name="textGrey">#bbc2c0</color>
     <color name="cardWhite">#ffffff</color>
+    <color name="cardBlack">#000000</color>
     <color name="CardGrey">#dee1e0</color>
     <color name="gameColorButton">#2afafafa</color>
 

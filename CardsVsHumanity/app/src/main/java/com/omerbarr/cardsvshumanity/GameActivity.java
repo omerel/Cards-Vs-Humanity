@@ -2,29 +2,45 @@ package com.omerbarr.cardsvshumanity;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.net.Uri;
-import android.os.Handler;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.omerbarr.cardsvshumanity.BusinessLogic.Cards;
+import com.omerbarr.cardsvshumanity.BusinessLogic.DataTransferred;
 import com.omerbarr.cardsvshumanity.BusinessLogic.GameCommandsConstants;
+import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
-public class GameActivity extends AppCompatActivity implements GameCommandsConstants, PickCardFragment.OnFragmentInteractionListener,WaitingToCzarFragment.OnFragmentInteractionListener {
+public class GameActivity extends AppCompatActivity implements GameCommandsConstants,
+        PickWhiteCardFragment.OnFragmentInteractionListener,PickBlackCardFragment.OnFragmentInteractionListener,
+        WaitingToPlayersFragment.OnFragmentInteractionListener, WaitingToCzarFragment.OnFragmentInteractionListener {
+
+    private final String TAG = "DEBUG: "+GameActivity.class.getSimpleName();
+
+    public static final String BROAD_CAST_CZAR_MODE = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_CZAR_MODE";
+    public static final String BROAD_CAST_PLAYER_MODE = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_PLAYER_MODE";
+    public static final String BROAD_CAST_PLAYER_WAITING = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_PLAYER_WAITING";
+    public static final String BROAD_CAST_CZAR_WAITING = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_CZAR_WAITING";
 
 
     final int PLAYER_MODE = 1;
     final int CZAR_MODE = 2;
     final int PLAYER_WAITING = 3;
-    final int CZAR_CZAR = 4;
+    final int CZAR_WAITING = 4;
 
 
     private TextView mTextScore;
@@ -36,6 +52,27 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
     private View mContentView;
     private View mLoadingView;
     private int mShortAnimationDuration;
+
+    // Activity BroadcastReceiver
+    private BroadcastReceiver mBroadcastReceiver;
+    private IntentFilter mFilter;
+
+    private int myId;
+
+
+    private DataTransferred.RoundData recievedRoundData;
+    private DataTransferred.CzarData recievedCzarData;
+    private DataTransferred.PlayerData recievedPlayerData;
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onBackPressed() {
+        backDialog("Warning","Are you sure you want to quit?");
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,13 +88,24 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
 
         mTextScore = (TextView)findViewById(R.id.text_score);
         mTextScore.setText(SCORE+0);
+
+        mTextScore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ShowScoreTable();
+            }
+        });
         mRound = (TextView)findViewById(R.id.text_game_round);
         mRound.setText(ROUND+1);
 
+        createGameActivityBroadcastReceiver();
+
+        myId = getIntent().getIntExtra("id",0);
         boolean isCzar = getIntent().getBooleanExtra("czar",false);
+
         // start
         if (isCzar)
-            displayFragment(CZAR_MODE);
+            displayFragment(CZAR_WAITING);
         else
             displayFragment(PLAYER_WAITING);
     }
@@ -119,14 +167,24 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
 
         switch (mode){
             case PLAYER_MODE:
-                mFragment = PickCardFragment.newInstance(new int[]{1,14,22,6,8,7},1,13);
+                String blackCard = Cards.BLACK_CARDS[recievedCzarData.pickedBlackCard];
+                int answers = blackCard.split("_").length-1;
+                // if there is no "_" in the sentence
+                if (answers == 0)
+                    answers = 1;
+                int[] cards =  new int [recievedRoundData.mPlayersCardsPull[myId].size()];
+                for(int i=0;i<cards.length;i++)
+                        cards[i] = recievedRoundData.mPlayersCardsPull[myId].get(i);
+                mFragment = PickWhiteCardFragment.newPickWhiteCardFragment(cards,answers,recievedCzarData.pickedBlackCard);
                 break;
             case CZAR_MODE:
+                mFragment = PickBlackCardFragment.newPickBlackCardFragment(JsonConvertor.convertToJson(recievedRoundData));
                 break;
             case PLAYER_WAITING:
-                mFragment = WaitingToCzarFragment.newInstance();
+                mFragment = WaitingToCzarFragment.newWaitingToCzarFragment();
                 break;
-            case CZAR_CZAR:
+            case CZAR_WAITING:
+                mFragment = WaitingToPlayersFragment.newWaitingToPlayersFragment();
                 break;
         }
 
@@ -142,11 +200,115 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
 
     @Override
     public void onFragmentInteraction(int[] pickedAnswers) {
-        Toast.makeText(this,"the answers is "+pickedAnswers[0],Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onFragmentInteraction(int cmd) {
-
+        // not in use
     }
+
+    /**
+     *  Player BroadcastReceiver
+     */
+    private void createGameActivityBroadcastReceiver() {
+
+        mFilter = new IntentFilter();
+        mFilter.addAction(BROAD_CAST_CZAR_MODE);
+        mFilter.addAction(BROAD_CAST_CZAR_WAITING);
+        mFilter.addAction(BROAD_CAST_PLAYER_MODE);
+        mFilter.addAction(BROAD_CAST_PLAYER_WAITING);
+
+        mBroadcastReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                String action = intent.getAction();
+
+                switch (action){
+                    case BROAD_CAST_CZAR_MODE:
+                        recievedRoundData = JsonConvertor.JsonToRoundData(intent.getStringExtra("data"));
+                        displayFragment(CZAR_MODE);
+                        Log.e(TAG,"BROAD_CAST_CZAR_MODE");
+
+                        break;
+                    case BROAD_CAST_CZAR_WAITING:
+                        displayFragment(CZAR_WAITING);
+                        Log.e(TAG,"BROAD_CAST_CZAR_WAITING");
+                        break;
+                    case BROAD_CAST_PLAYER_MODE:
+                        Log.e(TAG,"BROAD_CAST_PLAYER_MODE");
+                        recievedCzarData = JsonConvertor.JsonToCzarData(intent.getStringExtra("data"));
+                        displayFragment(PLAYER_MODE);
+
+                        break;
+                    case BROAD_CAST_PLAYER_WAITING:
+                        Log.e(TAG,"BROAD_CAST_PLAYER_WAITING");
+                        recievedRoundData = JsonConvertor.JsonToRoundData(intent.getStringExtra("data"));
+                        mTextScore.setText(SCORE+recievedRoundData.mScoreTable[myId]);
+                        mRound.setText(ROUND+recievedRoundData.mRound);
+                        displayFragment(PLAYER_WAITING);
+
+
+                        break;
+                }
+            }
+        };
+        registerReceiver(mBroadcastReceiver, mFilter);
+    }
+
+    private void ShowScoreTable() {
+
+        String score="";
+        if (recievedRoundData != null){
+            for (int i = 0; i< recievedRoundData.mPlayersNameArrayList.size(); i++){
+                score+= "\nPlayer "+(i+1)+"("+recievedRoundData.mPlayersNameArrayList.get(i)+"): "+
+                        recievedRoundData.mScoreTable[i]+" points.";
+            }
+
+        }
+        else
+            score = "No data available";
+
+
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle("Score");
+        alertDialog.setMessage(score);
+
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+        alertDialog.show();
+    }
+
+    private void backDialog(String title, String content) {
+
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle(title);
+        alertDialog.setMessage(content);
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "yes",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        unregisterReceiver(mBroadcastReceiver);
+                        onDestroy();
+                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                        startActivity(intent);
+                        overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+
+                    }
+                });
+
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "no",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+
+        alertDialog.show();
+    }
+
+
 }

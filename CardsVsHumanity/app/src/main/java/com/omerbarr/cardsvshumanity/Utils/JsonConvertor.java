@@ -4,6 +4,9 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.omerbarr.cardsvshumanity.BusinessLogic.DataTransferred;
+import com.omerbarr.cardsvshumanity.BusinessLogic.GameData;
+
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +48,23 @@ public class JsonConvertor {
             return null;
         String jsonString = new Gson().toJson(content);
         return jsonString;
+    }
+
+    public static DataTransferred.RoundData JsonToRoundData(String jsonString){
+        Gson gson = new Gson();
+        Type type = new TypeToken<DataTransferred.RoundData>(){}.getType();
+        return gson.fromJson(jsonString, type);
+    }
+
+    public static DataTransferred.CzarData JsonToCzarData(String jsonString){
+        Gson gson = new Gson();
+        Type type = new TypeToken<DataTransferred.CzarData>(){}.getType();
+        return gson.fromJson(jsonString, type);
+    }
+    public static DataTransferred.PlayerData JsonToPlayerData(String jsonString){
+        Gson gson = new Gson();
+        Type type = new TypeToken<DataTransferred.PlayerData>(){}.getType();
+        return gson.fromJson(jsonString, type);
     }
 
     public static boolean isJSONValid(String jsonContent) {

@@ -194,7 +194,8 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
                         break;
 
                     case BROAD_CAST_START_GAME:
-                        goToGameActivity(false);
+                        int id = intent.getIntExtra("id",0);
+                        goToGameActivity(false,id);
                         break;
                 }
             }
@@ -202,9 +203,10 @@ public class JoinGameActivity extends AppCompatActivity implements View.OnClickL
         registerReceiver(mBroadcastReceiver, mFilter);
     }
 
-    private void goToGameActivity(boolean czar) {
+    private void goToGameActivity(boolean czar,int id) {
         Intent intent = new Intent(getApplicationContext(), GameActivity.class);
         intent.putExtra("czar",czar);
+        intent.putExtra("id",id);
         startActivity(intent);
         overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
     }

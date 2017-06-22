@@ -18,6 +18,9 @@ import java.util.ArrayList;
 
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
 import static com.omerbarr.cardsvshumanity.CreateGameActivity.BROAD_CAST_START_GAME;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_MODE;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_WAITING;
+
 
 /**
  * Created by omer on 15/06/2017.
@@ -25,7 +28,10 @@ import static com.omerbarr.cardsvshumanity.CreateGameActivity.BROAD_CAST_START_G
 
 public class GameManager implements  GameCommandsConstants {
 
+
     private final String TAG = "DEBUG: "+GameManager.class.getSimpleName();
+    public static final String UPDATE_CZAR_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_CZAR_DATA";
+    public static final String UPDATE_PLAYERS_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_PLAYERS_DATA";
 
     private final int ALL_DEVICES = -1;
 
@@ -84,13 +90,12 @@ public class GameManager implements  GameCommandsConstants {
 
         createGameBroadcastReceiver();
 
+        Intent intent  = new Intent(BROAD_CAST_START_GAME);
+        intent.putExtra("id",0);
+        mServiceContext.sendBroadcast(intent);
+
         resetAckStatus();
-        mLastCommandSent = CMD_START_GAME;
-        mLastJsonSent = "dummy";
-
-        sendPacket(ALL_DEVICES,CMD_START_GAME,"dummy");
-        mHandler.postDelayed(mRunnable,MAX_TIME_FOR_RESPONED);
-
+        sendPacketFirstTime();
     }
 
     public void close(){
@@ -106,6 +111,22 @@ public class GameManager implements  GameCommandsConstants {
 
     private void startRound(){
 
+        int czar = mGameData.startRound();
+        resetAckStatus();
+        mLastCommandSent = CMD_START_ROUND;
+        mLastJsonSent = JsonConvertor.convertToJson(mGameData.getRoundData());
+        sendPacket(ALL_DEVICES,mLastCommandSent,mLastJsonSent);
+        mHandler.postDelayed(mRunnable,MAX_TIME_FOR_RESPONED);
+//        // check if the manager is czar(czar == 0)
+//        if(czar == 0){
+//            // get into czar mode
+//            Intent intent = new Intent(BROAD_CAST_CZAR_MODE);
+//            intent.putExtra("data",mLastJsonSent);
+//            mServiceContext.sendBroadcast(intent);
+//        }
+//        else{
+//
+//        }
     }
     /**
      * Handler of incoming messages from one of the BL classes
@@ -142,6 +163,14 @@ public class GameManager implements  GameCommandsConstants {
         Log.e(TAG,"JsonString sent size is : "+jsonContent.length());
     }
 
+    private void sendPacketFirstTime(){
+        for (int i = 1; i< mBluetoothConnections.length; i++) {
+            String jsonPacket = JsonConvertor.createJsonWithCommand(CMD_START_GAME,String.valueOf(i));
+            mBluetoothConnections[i].writePacket(jsonPacket);
+        }
+
+    }
+
     public void decodePacket(String jsonPacket,int deviceId){
         Log.e(TAG,"JsonString received size is : "+jsonPacket.length());
         JsonConvertor.isJSONValid(jsonPacket);
@@ -152,9 +181,31 @@ public class GameManager implements  GameCommandsConstants {
                     Log.e(TAG, "ACK_START_GAME");
                     mAckStatus[deviceId] = true;
                     if(checkAllDevicesReceived()){
+                        startRound();
+                    }
+                    break;
+                    case ACK_START_ROUND:
+                    Log.e(TAG, "ACK_START_ROUND");
+                    mAckStatus[deviceId] = true;
+                    if(checkAllDevicesReceived()){
                         // cancel timer
                         mHandler.removeCallbacks(mRunnable);
-                        mServiceContext.sendBroadcast(new Intent(BROAD_CAST_START_GAME));
+                        // get into czar mode
+                        Intent intent = new Intent(BROAD_CAST_CZAR_MODE);
+                        intent.putExtra("data",mLastJsonSent);
+                        mServiceContext.sendBroadcast(intent);
+                    }
+                    break;
+                    case ACK_REVEAL_BLACK_CARD:
+                    Log.e(TAG, "ACK_REVEAL_BLACK_CARD");
+                    mAckStatus[deviceId] = true;
+                    if(checkAllDevicesReceived()){
+                        // cancel timer
+                        mHandler.removeCallbacks(mRunnable);
+                        // get into czar waitnig
+                        Intent intent = new Intent(BROAD_CAST_CZAR_WAITING);
+                        intent.putExtra("data",mLastJsonSent);
+                        mServiceContext.sendBroadcast(intent);
                     }
                     break;
             }
@@ -176,7 +227,9 @@ public class GameManager implements  GameCommandsConstants {
     private void createGameBroadcastReceiver() {
 
         mFilter = new IntentFilter();
-        mFilter.addAction("adsad");
+        mFilter.addAction(UPDATE_PLAYERS_DATA);
+        mFilter.addAction(UPDATE_CZAR_DATA);
+
         mBroadcastReceiver = new BroadcastReceiver() {
 
             @Override
@@ -186,8 +239,20 @@ public class GameManager implements  GameCommandsConstants {
 
                 switch (action){
                     // When incoming message received
-                    case "sadsa":
-                        Log.e(TAG,"KILL_SERVICE");
+                    case UPDATE_PLAYERS_DATA:
+                        Log.e(TAG,"UPDATE_PLAYERS_DATA");
+                        // send cmd reveal black card card
+                        break;
+                    case UPDATE_CZAR_DATA:
+                            Log.e(TAG,"UPDATE_CZAR_DATA");
+                            int pickedCard = intent.getIntExtra("data",0);
+                            resetAckStatus();
+                            mLastCommandSent = CMD_REVEAL_BLACK_CARD;
+                            mLastJsonSent = JsonConvertor.convertToJson(new DataTransferred.CzarData(pickedCard));
+                            sendPacket(ALL_DEVICES,mLastCommandSent,mLastJsonSent);
+                            mHandler.postDelayed(mRunnable,MAX_TIME_FOR_RESPONED);
+                            //go to waiting
+                            Toast.makeText(mServiceContext,"go to waiting",Toast.LENGTH_SHORT).show();
                         break;
                 }
             }

@@ -187,6 +187,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
                     Toast.makeText(this, "Start game", Toast.LENGTH_SHORT).show();
                     // BroadCast start game to Service
                     Intent msgToService = new Intent(START_GAME);
+                    msgToService.putExtra("name",mPlayerName.getText().toString());
                     sendBroadcast(msgToService);
                 }
                 else
@@ -251,7 +252,8 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
                         mListArrayAdapter.add("Player "+(mPlayersArrayList.size()+1)+": "+deviceName);
                         break;
                     case BROAD_CAST_START_GAME:
-                        goToGameActivity(true);
+                        int id = intent.getIntExtra("id",0);
+                        goToGameActivity(true,id);
                         break;
                 }
             }
@@ -260,9 +262,10 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
     }
 
 
-    private void goToGameActivity(boolean czar) {
+    private void goToGameActivity(boolean czar, int id) {
         Intent intent = new Intent(getApplicationContext(), GameActivity.class);
         intent.putExtra("czar",czar);
+        intent.putExtra("id",id);
         startActivity(intent);
         overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
     }

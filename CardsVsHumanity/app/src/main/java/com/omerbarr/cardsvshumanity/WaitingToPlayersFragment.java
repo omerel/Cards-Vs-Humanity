@@ -18,12 +18,12 @@ import static com.omerbarr.cardsvshumanity.BusinessLogic.PlayerManager.BROAD_CAS
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link WaitingToCzarFragment.OnFragmentInteractionListener} interface
+ * {@link WaitingToPlayersFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link WaitingToCzarFragment#newWaitingToCzarFragment} factory method to
+ * Use the {@link WaitingToPlayersFragment#newWaitingToPlayersFragment} factory method to
  * create an instance of this fragment.`sys
  */
-public class WaitingToCzarFragment extends Fragment {
+public class WaitingToPlayersFragment extends Fragment {
 
     private View view;
 
@@ -39,7 +39,7 @@ public class WaitingToCzarFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    public WaitingToCzarFragment() {
+    public WaitingToPlayersFragment() {
         // Required empty public constructor
     }
 
@@ -50,8 +50,8 @@ public class WaitingToCzarFragment extends Fragment {
      * @return A new instance of fragment PickWhiteCardFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static WaitingToCzarFragment newWaitingToCzarFragment() {
-        WaitingToCzarFragment fragment = new WaitingToCzarFragment();
+    public static WaitingToPlayersFragment newWaitingToPlayersFragment() {
+        WaitingToPlayersFragment fragment = new WaitingToPlayersFragment();
         Bundle args = new Bundle();
         fragment.setArguments(args);
         return fragment;
@@ -62,7 +62,6 @@ public class WaitingToCzarFragment extends Fragment {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
       }
-
         mButtonReset = (Button) getActivity().findViewById(R.id.button_reset);
         mButtonReset.setEnabled(false);
         mButtonReset.setAlpha((float) 0.15);
@@ -75,7 +74,7 @@ public class WaitingToCzarFragment extends Fragment {
         mTextCounter = (TextView) getActivity().findViewById(R.id.text_cards_picked);
         mTextCounter.setText("");
         mTextGuidance = (TextView) getActivity().findViewById(R.id.text_guidance);
-        mTextGuidance.setText("Waiting for czar pick a black card");
+        mTextGuidance.setText("Waiting for players pick their answers");
 
     }
 
@@ -83,7 +82,7 @@ public class WaitingToCzarFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        view = inflater.inflate(R.layout.fragment_wait_to_czar, container, false);
+        view = inflater.inflate(R.layout.fragment_wait_to_players, container, false);
         mGifImageView = (GifImageView) view.findViewById(R.id.gif);
         mGifImageView.setGifImageResource(R.drawable.gif_waiting);
         return view;
