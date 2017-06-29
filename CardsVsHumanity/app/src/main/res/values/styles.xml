@@ -51,7 +51,7 @@
 
     <style name="czar_card_text">
         <item name="android:textColor">#fafafa</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">17sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:padding">4dp</item>
     </style>

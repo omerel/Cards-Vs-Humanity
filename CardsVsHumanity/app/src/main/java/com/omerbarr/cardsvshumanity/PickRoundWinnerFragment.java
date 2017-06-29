@@ -12,7 +12,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Html;
-import android.text.Spanned;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,27 +21,30 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.omerbarr.cardsvshumanity.BusinessLogic.Cards;
+import com.omerbarr.cardsvshumanity.BusinessLogic.DataTransferred;
 import com.omerbarr.cardsvshumanity.Utils.CardAdapter;
 import com.omerbarr.cardsvshumanity.Utils.GridSpacingItemDecoration;
+import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
 import java.util.ArrayList;
 
-import static com.omerbarr.cardsvshumanity.BusinessLogic.PlayerManager.UPDATE_PLAYER_DATA;
+import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.UPDATE_ROUND_RESULT;
 
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link PickWhiteCardFragment.OnFragmentInteractionListener} interface
+ * {@link PickRoundWinnerFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link PickWhiteCardFragment#newPickWhiteCardFragment} factory method to
+ * Use the {@link PickRoundWinnerFragment#newPickRoundWinnerFragment} factory method to
  * create an instance of this fragment.`sys
  */
-public class PickWhiteCardFragment extends Fragment {
+public class PickRoundWinnerFragment extends Fragment {
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_WHITE_CARDS = "white_cards";
-    private static final String ARG_NUM_OF_ANSWERS = "num_of_answers";
+    private static final String ARG_DATA = "data";
     private static final String ARG_BLACK_CARD = "black_card";
+    private static final String ARG_IS_CZAR = "is_czar";
+
 
     private View view;
 
@@ -52,7 +54,6 @@ public class PickWhiteCardFragment extends Fragment {
     private TextView mTextBlackCard;
     private TextView mTextCounter;
     private TextView mTextGuidance;
-    private View mWaitingSign;
 
     // view and adapter
     private RecyclerView mCardRecyclerView;
@@ -60,20 +61,22 @@ public class PickWhiteCardFragment extends Fragment {
     private CardAdapter mCardListAdapter;
 
     private int mAnswerCounter;
-    private int[] mPickedanswers;
+    private int mPickedAnswer;
 
     // received parameters
-    private int[] mReceivedCards;
     private int mNumOfAnswers;
     private int mBlackCard;
 
     private String[] mCzarCard;
-    private final String SPACE = "_______";
+
+    private boolean mIsCzar;
+
+    // picked answers from all users
+    private DataTransferred.PlayerData[]  mPlayersData;
 
     private OnFragmentInteractionListener mListener;
 
-
-    public PickWhiteCardFragment() {
+    public PickRoundWinnerFragment() {
         // Required empty public constructor
     }
 
@@ -84,12 +87,13 @@ public class PickWhiteCardFragment extends Fragment {
      * @return A new instance of fragment PickWhiteCardFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static PickWhiteCardFragment newPickWhiteCardFragment(int[] receivedCards, int numOfAnswers, int blackCard) {
-        PickWhiteCardFragment fragment = new PickWhiteCardFragment();
+    public static PickRoundWinnerFragment newPickRoundWinnerFragment(String playersData, int blackCard,
+                                                                     boolean isCzar) {
+        PickRoundWinnerFragment fragment = new PickRoundWinnerFragment();
         Bundle args = new Bundle();
-        args.putIntArray(ARG_WHITE_CARDS, receivedCards);
-        args.putInt(ARG_NUM_OF_ANSWERS, numOfAnswers);
+        args.putString(ARG_DATA,playersData);
         args.putInt(ARG_BLACK_CARD, blackCard);
+        args.putBoolean(ARG_IS_CZAR,isCzar);
         fragment.setArguments(args);
         return fragment;
     }
@@ -98,91 +102,38 @@ public class PickWhiteCardFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mReceivedCards = getArguments().getIntArray(ARG_WHITE_CARDS);
-            mNumOfAnswers = getArguments().getInt(ARG_NUM_OF_ANSWERS);
+            mPlayersData = JsonConvertor.JsonToPlayersData(getArguments().getString(ARG_DATA));
             mBlackCard = getArguments().getInt(ARG_BLACK_CARD);
+            mIsCzar = getArguments().getBoolean(ARG_IS_CZAR);
       }
 
         // initialize num of picked answers
         mAnswerCounter = 0;
-        mPickedanswers = new int[mNumOfAnswers];
+        mNumOfAnswers = 1; // choose one card winner
+        mPickedAnswer = 0;
 
         mButtonReset = (Button) getActivity().findViewById(R.id.button_reset);
-        mButtonReset.setEnabled(true);
-        mButtonReset.setAlpha((float) 1.0);
-        mButtonReset.setText("clear");
+        mButtonReset.setEnabled(false);
+        mButtonReset.setAlpha((float) 0.15);
         mButtonOk  = (Button) getActivity().findViewById(R.id.button_ok);
         mButtonOk.setEnabled(false);
         mButtonOk.setAlpha((float) 0.15);
-        mButtonOk.setText("Cards sent");
+
         mTextBlackCard = (TextView)getActivity().findViewById(R.id.czar_card);
-        mTextBlackCard.setTextSize(15f);
+        if(!mIsCzar)
+            mTextBlackCard.setText("All players answers");
+
         String czarCard = Cards.BLACK_CARDS[mBlackCard];
         mCzarCard = czarCard.split("_");
-        mTextBlackCard.setText(getCzarCard(false));
-
-        mWaitingSign = getActivity().findViewById(R.id.loading_spinner);
-        mWaitingSign.setVisibility(View.INVISIBLE);
 
         mTextCounter = (TextView) getActivity().findViewById(R.id.text_cards_picked);
         mTextCounter.setText(mAnswerCounter+"/"+mNumOfAnswers);
         mTextGuidance = (TextView) getActivity().findViewById(R.id.text_guidance);
-        mTextGuidance.setText("Pick up "+mNumOfAnswers+" cards  related to the black card above");
+        if(mIsCzar)
+            mTextGuidance.setText("Pick up card winner!");
+        else
+            mTextGuidance.setText("wait for Czar pick the winner");
 
-        mButtonReset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mAnswerCounter = 0;
-                mTextCounter.setText("0/"+mNumOfAnswers);
-                //reset cards and adapter
-                mCardArrayList = new ArrayList<>();
-                for(int i = 0; i < mReceivedCards.length; i++  ){
-                    mCardArrayList.add(Cards.WHITE_CARDS[mReceivedCards[i]]);
-                }
-                mCardListAdapter = new CardListAdapter(mCardArrayList);
-                mCardRecyclerView.setAdapter(mCardListAdapter);
-                initSwipe();
-            }
-        });
-
-//        mButtonOk.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (mAnswerCounter == mNumOfAnswers){
-//                    mButtonOk.setEnabled(false);
-//                    mButtonOk.setAlpha((float) 0.15);
-//                    mButtonReset.setEnabled(false);
-//                    mButtonReset.setAlpha((float) 0.15);
-//                    mTextBlackCard.setText(getCzarCard(true));
-//                    // send the result to manager
-//                    Intent intent = new Intent(UPDATE_PLAYER_DATA);
-//                    intent.putExtra("data",mPickedanswers);
-//                    getActivity().sendBroadcast(intent);
-//
-//                }
-//                else{
-//                    Toast.makeText(getContext(),"You need to pick answers in order to send cards",Toast.LENGTH_LONG).show();
-//                }
-//            }
-//        });
-
-    }
-
-    private void sendAnswers(){
-
-        mButtonOk.setAlpha((float) 1.0);
-        mButtonOk.setBackground(getResources().getDrawable(R.drawable.my_button_style));
-        mButtonReset.setAlpha((float) 0.15);
-        mButtonReset.setEnabled(false);
-        mTextBlackCard.setText(getCzarCard(true));
-        view.setVisibility(View.INVISIBLE);
-        mWaitingSign.setVisibility(View.VISIBLE);
-        mWaitingSign.setAlpha(1f);
-        mTextGuidance.setText("Wait for Czar declares the round winner");
-        // send the result to manager
-        Intent intent = new Intent(UPDATE_PLAYER_DATA);
-        intent.putExtra("data",mPickedanswers);
-        getActivity().sendBroadcast(intent);
     }
 
     @Override
@@ -201,12 +152,17 @@ public class PickWhiteCardFragment extends Fragment {
 
 
         mCardArrayList = new ArrayList<>();
-        for(int i = 0; i < mReceivedCards.length; i++  ){
-            mCardArrayList.add(Cards.WHITE_CARDS[mReceivedCards[i]]+".");
+        for(int i = 0; i < mPlayersData.length; i++  ){
+            if (mPlayersData[i] != null){
+                String cardAnswer = getCzarCard(mPlayersData[i].pickedAnswers);
+                mCardArrayList.add(cardAnswer);
+            }
         }
         mCardListAdapter = new CardListAdapter(mCardArrayList);
         mCardRecyclerView.setAdapter(mCardListAdapter);
-        initSwipe();
+
+        if(mIsCzar)
+            initSwipe();
 
         return view;
     }
@@ -259,15 +215,15 @@ public class PickWhiteCardFragment extends Fragment {
         }
 
         @Override
-        public CardAdapter.CardViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-            View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.white_card_item, viewGroup, false);
+        public CardViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
+            View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.black_card_item, viewGroup, false);
             return new CardViewHolder(view);
         }
 
         @Override
-        public void onBindViewHolder(CardAdapter.CardViewHolder viewHolder,final int i) {
+        public void onBindViewHolder(CardViewHolder viewHolder,final int i) {
 
-            viewHolder.cardContent.setText(mArrayList.get(i));
+            viewHolder.cardContent.setText(Html.fromHtml(mArrayList.get(i)));
 
             viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -292,63 +248,65 @@ public class PickWhiteCardFragment extends Fragment {
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 if (direction == ItemTouchHelper.UP){
-                    mPickedanswers[mAnswerCounter] = mReceivedCards[viewHolder.getAdapterPosition()];
+                    mPickedAnswer = viewHolder.getAdapterPosition();
                     mAnswerCounter++;
                     mTextCounter.setText(mAnswerCounter+"/"+mNumOfAnswers);
-                    Toast.makeText(getContext(),"Card was picked", Toast.LENGTH_SHORT).show();
-                    mCardListAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
-                    if (mAnswerCounter == mNumOfAnswers){
-                        sendAnswers();
-                    }
+                    viewHolder.itemView.setVisibility(View.INVISIBLE);
+
+                     int player = findWinnerId(mCardArrayList.get(viewHolder.getAdapterPosition()));
+                    Intent intent = new Intent(UPDATE_ROUND_RESULT);
+                    intent.putExtra("data",player);
+                    getActivity().sendBroadcast(intent);
                 }
             }
 
             @Override
             public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
 
-                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-                    View itemView = viewHolder.itemView;
-                    if (dY > 0) {
-                        itemView.setAlpha((float) (0.9 - dY / 5000));
-                    } else {
-                        itemView.setAlpha((float) (0.9 + dY / 5000));
+                if (mAnswerCounter < mNumOfAnswers) {
+                    if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                        View itemView = viewHolder.itemView;
+                        if (dY > 0) {
+                            itemView.setAlpha((float) (0.9 - dY / 5000));
+                        } else {
+                            itemView.setAlpha((float) (0.9 + dY / 5000));
+                        }
                     }
+                    super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
                 }
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                else
+                    // don't move card
+                    super.onChildDraw(c, recyclerView, viewHolder, 0, 0, actionState, isCurrentlyActive);
             }
         };
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
         itemTouchHelper.attachToRecyclerView(mCardRecyclerView);
-
     }
 
-    private Spanned getCzarCard(boolean withAnswers){
+    private int findWinnerId(String string) {
+        for(int i = 0; i < mPlayersData.length; i++  ){
+            if (mPlayersData[i] != null){
+                String cardAnswer = getCzarCard(mPlayersData[i].pickedAnswers);
+                if(cardAnswer.equals(string))
+                    return mPlayersData[i].playerId;
+            }
+        }
+        return  -1;
+    }
+
+    private String getCzarCard(int[] pickedAnswers){
 
         String text = "";
-        if(!withAnswers){
-            if (mCzarCard.length == 1)
-                text= mCzarCard[0]+": "+SPACE;
-            else{
-                for(int i =0 ;i<mCzarCard.length; i++){
-                    text+=mCzarCard[i];
-                    if (i != mCzarCard.length-1)
-                        text+=SPACE;
-                }
-            }
-        }
+        if (mCzarCard.length == 1)
+            text =  mCzarCard[0]+": "+"<u><b>"+Cards.WHITE_CARDS[pickedAnswers[0]]+"</b></u>";
         else{
-            if (mCzarCard.length == 1)
-                text =  mCzarCard[0]+": "+"<u><b>"+Cards.WHITE_CARDS[mPickedanswers[0]]+"</b></u>";
-            else{
-                for(int i =0 ;i<mCzarCard.length; i++){
-                    text+=mCzarCard[i];
-                    if (i != mCzarCard.length-1)
-                        text+="<u><b>"+Cards.WHITE_CARDS[mPickedanswers[i]]+"</b></u>";
-                }
+            for(int i =0 ;i<mCzarCard.length; i++){
+                text+=mCzarCard[i];
+                if (i != mCzarCard.length-1)
+                    text+="<u><b>"+Cards.WHITE_CARDS[pickedAnswers[i]]+"</b></u>";
             }
-
         }
-        return Html.fromHtml(text);
+        return text;
     }
 }

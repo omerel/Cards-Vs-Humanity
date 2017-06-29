@@ -5,36 +5,24 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Html;
-import android.text.Spanned;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.omerbarr.cardsvshumanity.BusinessLogic.Cards;
 import com.omerbarr.cardsvshumanity.BusinessLogic.DataTransferred;
 import com.omerbarr.cardsvshumanity.Utils.GifImageView;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
-import java.util.ArrayList;
-import java.util.Random;
-
-import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.UPDATE_CZAR_DATA;
-import static com.omerbarr.cardsvshumanity.GameActivity.UPDATE_MANAGER_WITH_CZAR_DATA;
+import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.FINISH_ROUND;
 
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link PickBlackCardFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link PickBlackCardFragment#newPickBlackCardFragment} factory method to
- * create an instance of this fragment.`sys
- */
-public class PickBlackCardFragment extends Fragment {
+public class RoundWinnerFragment extends Fragment {
 
     private static final String ARG_DATA = "data";
+    private static final String ARG_ID = "data_id";
 
     private View view;
 
@@ -44,21 +32,18 @@ public class PickBlackCardFragment extends Fragment {
     private TextView mTextBlackCard;
     private TextView mTextCounter;
     private TextView mTextGuidance;
-    private TextView mCardContent;
 
 
-    private DataTransferred.RoundData roundData;
-    private int pickedCard;
+    private int myId;
 
     // waiting gif
     private GifImageView mGifImageView;
 
-    private String[] mCzarCard;
-    private final String SPACE = "_______";
-
     private OnFragmentInteractionListener mListener;
 
-    public PickBlackCardFragment() {
+    private DataTransferred.RoundData roundData;
+
+    public RoundWinnerFragment() {
         // Required empty public constructor
     }
 
@@ -68,10 +53,12 @@ public class PickBlackCardFragment extends Fragment {
      *
      * @return A new instance of fragment PickWhiteCardFragment.
      */
-    public static PickBlackCardFragment newPickBlackCardFragment(String jsonRoundData) {
-        PickBlackCardFragment fragment = new PickBlackCardFragment();
+    // TODO: Rename and change types and number of parameters
+    public static RoundWinnerFragment newRoundWinnerFragment(String jsonRoundData,int id) {
+        RoundWinnerFragment fragment = new RoundWinnerFragment();
         Bundle args = new Bundle();
         args.putString(ARG_DATA, jsonRoundData);
+        args.putInt(ARG_ID, id);
         fragment.setArguments(args);
         return fragment;
     }
@@ -82,55 +69,39 @@ public class PickBlackCardFragment extends Fragment {
         if (getArguments() != null) {
             String jsonRoundData = getArguments().getString(ARG_DATA);
             roundData = JsonConvertor.JsonToRoundData(jsonRoundData);
+            myId = getArguments().getInt(ARG_ID);
       }
 
         mButtonReset = (Button) getActivity().findViewById(R.id.button_reset);
-        mButtonReset.setEnabled(true);
-        mButtonReset.setAlpha((float) 1.0);
-        mButtonReset.setText("shuffle");
+        mButtonReset.setEnabled(false);
+        mButtonReset.setAlpha((float) 0.15);
         mButtonOk  = (Button) getActivity().findViewById(R.id.button_ok);
-        mButtonOk.setText("pick card");
+        mButtonOk.setBackground(getResources().getDrawable(R.drawable.game_button_style));
+        mButtonOk.setText("next round");
         mButtonOk.setEnabled(true);
         mButtonOk.setAlpha((float) 1.0);
         mTextBlackCard = (TextView)getActivity().findViewById(R.id.czar_card);
-        String czarCard = "";
-        mTextBlackCard.setText(czarCard);
+        mTextBlackCard.setTextSize(32f);
+        String czarCard = "Round's winner:\n\n"+"<b>"+roundData.mPlayersNameArrayList.get(roundData.mLastRoundWinner)+"</b>";
+        mTextBlackCard.setText( Html.fromHtml(czarCard));
+        mTextBlackCard.setGravity(Gravity.CENTER);
         mTextCounter = (TextView) getActivity().findViewById(R.id.text_cards_picked);
         mTextCounter.setText("");
         mTextGuidance = (TextView) getActivity().findViewById(R.id.text_guidance);
-        mTextGuidance.setText("Read your chosen card to your friends and press the pick card button");
+        mTextGuidance.setText("Click on next round button when ready");
 
+        if (myId != roundData.mCurrentCzar){
+            mButtonOk.setEnabled(false);
+            mTextGuidance.setText("Wait for the current Czar proceed next round");
+            mButtonOk.setAlpha((float) 0.15);
+        }
 
-        mButtonReset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                pickedCard =   shuffleBlackCard(roundData.mBlackCards);
-                mCardContent = (TextView)view.findViewById(R.id.card_content);
-                String card = Cards.BLACK_CARDS[pickedCard];
-                mCzarCard = card.split("_");
-                mCardContent.setText(getCzarCard());
-            }
-        });
 
         mButtonOk.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mButtonOk.setAlpha((float) 0.15);
-                mButtonOk.setEnabled(false);
-                mButtonReset.setAlpha((float) 0.15);
-                mButtonReset.setEnabled(false);
-
-                // broadcast game manger picked card
-                Intent intent =  new Intent(UPDATE_CZAR_DATA);
-                intent.putExtra("data",pickedCard);
+                Intent intent = new Intent(FINISH_ROUND);
                 getActivity().sendBroadcast(intent);
-
-                //if czar is manager broadcast activity picked game
-                Intent intent1 =  new Intent(UPDATE_MANAGER_WITH_CZAR_DATA);
-                intent1.putExtra("data",JsonConvertor.convertToJson(new DataTransferred.CzarData(pickedCard)));
-                getActivity().sendBroadcast(intent1);
-
             }
         });
     }
@@ -139,13 +110,18 @@ public class PickBlackCardFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        view = inflater.inflate(R.layout.fragment_pick_black_card, container, false);
-
-        pickedCard = shuffleBlackCard(roundData.mBlackCards);
-        mCardContent = (TextView)view.findViewById(R.id.card_content);
-        String card = Cards.BLACK_CARDS[pickedCard];
-        mCzarCard = card.split("_");
-        mCardContent.setText(getCzarCard());
+        view = inflater.inflate(R.layout.fragment_round_winner, container, false);
+        mGifImageView = (GifImageView) view.findViewById(R.id.gif);
+        //mGifImageView.setGifImageResource(R.drawable.gif_waiting);
+        // choose gif
+        if (roundData.mLastRoundWinner == myId)
+            mGifImageView.setGifImageResource(R.drawable.gif_win);
+        else {
+            if (roundData.mCurrentCzar == myId)
+                mGifImageView.setGifImageResource(R.drawable.gif_waiting);
+            else
+                mGifImageView.setGifImageResource(R.drawable.gif_loose);
+        }
         return view;
     }
 
@@ -177,32 +153,7 @@ public class PickBlackCardFragment extends Fragment {
      * "http://developer.android.com/training/basics/fragments/communicating.html"
      * >Communicating with Other Fragments</a> for more information.
      */
-
     public interface OnFragmentInteractionListener {
         void onFragmentInteraction(int cmd);
-    }
-
-    public int shuffleBlackCard(ArrayList arrayList){
-        int card = 0;
-        if (arrayList.size() > 0) {
-            Random random = new Random();
-            card = random.nextInt(arrayList.size());
-        }
-        return card;
-    }
-
-    private Spanned getCzarCard(){
-
-        String text = "";
-        if (mCzarCard.length == 1)
-            text= mCzarCard[0]+": "+SPACE;
-        else{
-            for(int i =0 ;i<mCzarCard.length; i++){
-                text+=mCzarCard[i];
-                if (i != mCzarCard.length-1)
-                    text+=SPACE;
-            }
-        }
-        return Html.fromHtml(text);
     }
 }

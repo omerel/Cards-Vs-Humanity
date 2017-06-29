@@ -14,8 +14,12 @@ import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConnected;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_MODE;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_WAITING;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PICK_ROUND_WINNER;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_MODE;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_WAITING;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_SHOW_ROUND_RESULT;
 import static com.omerbarr.cardsvshumanity.JoinGameActivity.BROAD_CAST_START_GAME;
 
 /**
@@ -26,7 +30,9 @@ public class PlayerManager implements GameCommandsConstants {
 
     public static final String BROAD_CAST_ACK_WAITING = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_ACK_WAITING";
     public static final String UPDATE_CZAR_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_CZAR_DATA";
-    public static final String UPDATE_PLAYERS_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_PLAYERS_DATA";
+    public static final String UPDATE_PLAYER_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_PLAYER_DATA";
+    public static final String FINISH_ROUND = "cardsvshumanity.BroadcastReceiver.FINISH_ROUND";
+    public static final String UPDATE_ROUND_RESULT = "cardsvshumanity.BroadcastReceiver.UPDATE_ROUND_RESULT";
 
     private final String TAG = "DEBUG: "+PlayerManager.class.getSimpleName();
 
@@ -41,6 +47,8 @@ public class PlayerManager implements GameCommandsConstants {
     private BroadcastReceiver mBroadcastReceiver;
     private IntentFilter mFilter;
 
+
+    private  DataTransferred.RoundData mRoundData;
 
     public PlayerManager(BluetoothSocket mBluetoothSocket, Messenger mServiceMessenger, Context mServiceContext) {
         this.mBluetoothSocket = mBluetoothSocket;
@@ -87,6 +95,9 @@ public class PlayerManager implements GameCommandsConstants {
 
     public void decodePacket(String jsonPacket){
         Intent intent;
+        String  jsonRoundData;
+        String  jsonPlayersData;
+
         Log.e(TAG,"JsonString received size is : "+jsonPacket.length());
         JsonConvertor.isJSONValid(jsonPacket);
         try {
@@ -103,22 +114,57 @@ public class PlayerManager implements GameCommandsConstants {
                     sendPacket(ACK_START_GAME,"dummy");
                     break;
                 case CMD_START_ROUND:
-                    Log.e(TAG, "CMD_START_GAME");
-                    String  jsonRoundData = JsonConvertor.getJsonContent(jsonPacket);
-                    // send device name to activity to add to list
-                    intent = new Intent(BROAD_CAST_PLAYER_WAITING);
-                    intent.putExtra("data",jsonRoundData);
-                    mServiceContext.sendBroadcast(intent);
-                    sendPacket(ACK_START_ROUND,"dummy");
+                    Log.e(TAG, "CMD_START_ROUND");
+                    jsonRoundData = JsonConvertor.getJsonContent(jsonPacket);
+                    mRoundData = JsonConvertor.JsonToRoundData(jsonRoundData);
+                    // check manager mode(czar or player)
+                    if (mBluetoothConnected.getMyId() == mRoundData.mCurrentCzar ){
+                        // get into czar mode
+                        intent = new Intent(BROAD_CAST_CZAR_MODE);
+                        intent.putExtra("data",jsonRoundData);
+                        mServiceContext.sendBroadcast(intent);
+                        sendPacket(ACK_START_ROUND,"dummy");
+                    }
+                    else{
+                        // get into player mode
+                        intent = new Intent(BROAD_CAST_PLAYER_WAITING);
+                        intent.putExtra("data",jsonRoundData);
+                        mServiceContext.sendBroadcast(intent);
+                        sendPacket(ACK_START_ROUND,"dummy");
+                    }
                     break;
                 case CMD_REVEAL_BLACK_CARD:
                     Log.e(TAG, "CMD_REVEAL_BLACK_CARD");
                     String  jsonCzarData = JsonConvertor.getJsonContent(jsonPacket);
-                    // send device name to activity to add to list
-                    intent = new Intent(BROAD_CAST_PLAYER_MODE);
-                    intent.putExtra("data",jsonCzarData);
-                    mServiceContext.sendBroadcast(intent);
+                    // if the player is czar go to waiting
+                    if (mBluetoothConnected.getMyId() == mRoundData.mCurrentCzar){
+                        // get into czar waiting
+                        intent = new Intent(BROAD_CAST_CZAR_WAITING);
+                        intent.putExtra("data",jsonCzarData);
+                        mServiceContext.sendBroadcast(intent);
+                    }else{
+                        intent = new Intent(BROAD_CAST_PLAYER_MODE);
+                        intent.putExtra("data",jsonCzarData);
+                        mServiceContext.sendBroadcast(intent);
+                    }
                     sendPacket(ACK_REVEAL_BLACK_CARD,"dummy");
+                    break;
+
+                case CMD_SHOW_ROUND_RESULT:
+                    Log.e(TAG, "CMD_SHOW_ROUND_RESULT");
+                    jsonRoundData = JsonConvertor.getJsonContent(jsonPacket);
+                    intent = new Intent(BROAD_CAST_SHOW_ROUND_RESULT);
+                    intent.putExtra("data",jsonRoundData);
+                    mServiceContext.sendBroadcast(intent);
+                    break;
+
+                case CMD_SHOW_ROUND_PLAYERS_ANSWERS:
+                    Log.e(TAG, "CMD_SHOW_ROUND_PLAYERS_ANSWERS");
+                    jsonPlayersData = JsonConvertor.getJsonContent(jsonPacket);
+                    // go to pick roundWinner
+                    intent = new Intent(BROAD_CAST_PICK_ROUND_WINNER);
+                    intent.putExtra("data",jsonPlayersData);
+                    mServiceContext.sendBroadcast(intent);
                     break;
             }
         } catch (Exception e) {
@@ -134,7 +180,10 @@ public class PlayerManager implements GameCommandsConstants {
         mFilter = new IntentFilter();
         mFilter.addAction(BROAD_CAST_ACK_WAITING);
         mFilter.addAction(UPDATE_CZAR_DATA);
-        mFilter.addAction(UPDATE_PLAYERS_DATA);
+        mFilter.addAction(UPDATE_PLAYER_DATA);
+        mFilter.addAction(FINISH_ROUND);
+        mFilter.addAction(UPDATE_ROUND_RESULT);
+
         mBroadcastReceiver = new BroadcastReceiver() {
 
             @Override
@@ -149,10 +198,32 @@ public class PlayerManager implements GameCommandsConstants {
                         sendPacket(ACK_START_GAME,"dummy");
                         break;
                     case UPDATE_CZAR_DATA:
+                        Log.e(TAG,"UPDATE_CZAR_DATA");
+                        int cmd;
+                        String content;
                         // send data to manager
+                        int pickedCard = intent.getIntExtra("data",0);
+                        cmd = CMD_REVEAL_BLACK_CARD;
+                        content = JsonConvertor.convertToJson(new DataTransferred.CzarData(pickedCard));
+                        sendPacket(cmd,content);
+                        //go to waiting
                         break;
-                    case UPDATE_PLAYERS_DATA:
+                    case UPDATE_PLAYER_DATA:
+                        Log.e(TAG,"UPDATE_PLAYER_DATA");
                         // send data to manager
+                        int[] pickedAnswers = intent.getIntArrayExtra("data");
+                        DataTransferred.PlayerData playerData =
+                                new DataTransferred.PlayerData(pickedAnswers,mBluetoothConnected.getMyId());
+                        sendPacket(UPDATE_PLAYER_ANSWER,JsonConvertor.convertToJson(playerData));
+                        break;
+
+                    case UPDATE_ROUND_RESULT:
+                        int winnerId = intent.getIntExtra("data",0);
+                        sendPacket(UPDATE_ROUND_WINNER,String.valueOf(winnerId));
+                        break;
+
+                    case FINISH_ROUND:
+                        sendPacket(CMD_FINISH_ROUND,"dummy");
                         break;
                 }
             }

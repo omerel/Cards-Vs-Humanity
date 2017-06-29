@@ -67,6 +67,12 @@ public class JsonConvertor {
         return gson.fromJson(jsonString, type);
     }
 
+    public static DataTransferred.PlayerData[] JsonToPlayersData(String jsonString){
+        Gson gson = new Gson();
+        Type type = new TypeToken<DataTransferred.PlayerData[]>(){}.getType();
+        return gson.fromJson(jsonString, type);
+    }
+
     public static boolean isJSONValid(String jsonContent) {
         try {
             getCommand(jsonContent);

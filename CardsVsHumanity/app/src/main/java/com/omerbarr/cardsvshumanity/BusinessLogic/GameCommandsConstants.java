@@ -18,6 +18,17 @@ public interface GameCommandsConstants {
     int CMD_REVEAL_BLACK_CARD = 115;
     int ACK_REVEAL_BLACK_CARD = 116;
 
+    int UPDATE_PLAYER_ANSWER = 117;
+
+    int CMD_SHOW_ROUND_PLAYERS_ANSWERS = 120;
+
+    int CMD_SHOW_ROUND_RESULT = 118;
+    int ACK_SHOW_ROUND_RESULT = 119;
+
+    int CMD_FINISH_ROUND = 121;
+
+    int UPDATE_ROUND_WINNER = 122;
+
 
 
 

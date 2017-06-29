@@ -1,7 +1,6 @@
 package com.omerbarr.cardsvshumanity.BusinessLogic;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Random;
 
 /**
@@ -17,6 +16,7 @@ public class GameData implements GameCommandsConstants {
     private ArrayList<String> mBlackCards;
     private ArrayList<String> mPlayersNameArrayList;
     private ArrayList<Integer>[] mPlayersCardsPull;
+    private int mLastRoundWinnerId;
     private int mPickedBlackCard;
 
     public GameData(ArrayList<String> playersNameArrayList) {
@@ -42,10 +42,11 @@ public class GameData implements GameCommandsConstants {
         mPlayersCardsPull = new ArrayList[mPlayersNameArrayList.size()];
         for (int i=0; i < mPlayersCardsPull.length; i++)
             mPlayersCardsPull[i] = new ArrayList<>();
+        mLastRoundWinnerId = 0;
         spreadWhiteCardsToAllPlayers();
     }
 
-    public int pickWhiteCard(){
+    private int pickWhiteCard(){
         int card = 0;
         if (mWhiteCards.size() > 0) {
             Random random = new Random();
@@ -53,6 +54,18 @@ public class GameData implements GameCommandsConstants {
             mWhiteCards.remove(card);
         }
         return card;
+    }
+
+    public void removeCardFromPlayer(int player,int[] cards){
+        for (int i = 0 ; i < cards.length; i++){
+            if (mPlayersCardsPull.length > player)
+            {
+                int index = mPlayersCardsPull[player].indexOf(cards[i]);
+                if (index != -1)
+                    mPlayersCardsPull[player].remove(index);
+            }
+        }
+
     }
 
     public int shuffleBlackCard(){
@@ -63,13 +76,17 @@ public class GameData implements GameCommandsConstants {
         }
         return card;
     }
+
     public void pickBlackCard(int card){
         mBlackCards.remove(card);
     }
 
     public void addScoreToPlayer(int playerIndex){
         mScoreTable[playerIndex]++;
+        mLastRoundWinnerId = playerIndex;
     }
+
+    public int getLastRoundWinner(){return mLastRoundWinnerId;}
 
     public int[] getScoreTable(){return mScoreTable;}
 
@@ -90,17 +107,16 @@ public class GameData implements GameCommandsConstants {
         }
     }
 
-
     public DataTransferred.RoundData getRoundData(){
         return new DataTransferred.RoundData(mScoreTable,mRound,mCurrentCzar,mBlackCards,
-                mPlayersNameArrayList,mPlayersCardsPull);
+                mPlayersNameArrayList,mPlayersCardsPull,mLastRoundWinnerId);
     }
 
     // returns the current czar
     public int startRound(){
         spreadWhiteCardsToAllPlayers();
         mRound++;
-        if(mCurrentCzar == mPlayersNameArrayList.size())
+        if((mCurrentCzar+1) == mPlayersNameArrayList.size())
             mCurrentCzar = -1;
         mCurrentCzar++;
         return  mCurrentCzar;

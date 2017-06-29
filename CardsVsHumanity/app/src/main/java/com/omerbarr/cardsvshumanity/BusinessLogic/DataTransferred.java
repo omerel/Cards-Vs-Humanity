@@ -12,16 +12,18 @@ public class DataTransferred {
         public ArrayList<String> mBlackCards;
         public ArrayList<String> mPlayersNameArrayList;
         public ArrayList<Integer>[] mPlayersCardsPull;
+        public int mLastRoundWinner;
 
         public RoundData(int[] mScoreTable, int mRound, int mCurrentCzar,ArrayList<String> mBlackCards,
                          ArrayList<String> mPlayersNameArrayList,
-                         ArrayList<Integer>[] mPlayersCardsPull) {
+                         ArrayList<Integer>[] mPlayersCardsPull,int lastWinner) {
             this.mScoreTable = mScoreTable;
             this.mRound = mRound;
             this.mCurrentCzar = mCurrentCzar;
             this.mBlackCards = mBlackCards;
             this.mPlayersNameArrayList = mPlayersNameArrayList;
             this.mPlayersCardsPull = mPlayersCardsPull;
+            this.mLastRoundWinner = lastWinner;
         }
     }
 
@@ -34,10 +36,12 @@ public class DataTransferred {
     }
 
     public static class PlayerData{
+        public int playerId;
         public int[] pickedAnswers;
 
-        public PlayerData(int[] pickedAnswers) {
+        public PlayerData(int[] pickedAnswers,int playerId) {
             this.pickedAnswers = pickedAnswers;
+            this.playerId = playerId;
         }
     }
 }

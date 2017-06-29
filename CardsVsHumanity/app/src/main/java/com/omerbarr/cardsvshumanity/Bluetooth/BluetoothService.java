@@ -191,23 +191,28 @@ public class BluetoothService extends Service implements BluetoothConstants{
 
         // close sockets
         if (manager){
-            // unregisterReceiver
-            mGameManager.close();
-           for(int i = 0; i < mSocketArrayList.size(); i++){
-               if (mSocketArrayList.get(i) != null)
-                   try {
-                       mSocketArrayList.get(i).close();
-                   } catch (IOException e) {
-                       e.printStackTrace();
-                   }
-           }
+            if ( mGameManager != null){
+                // unregisterReceiver
+                mGameManager.close();
+                for(int i = 0; i < mSocketArrayList.size(); i++){
+                    if (mSocketArrayList.get(i) != null)
+                        try {
+                            mSocketArrayList.get(i).close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                }
+            }
+
         }
         else {
-            // unregisterReceiver
-            mPlayerManager.close();
-            //close socket if exist
-            if (mBluetoothClient != null)
-                mBluetoothClient.cancel();
+            if ( mPlayerManager != null){
+                // unregisterReceiver
+                mPlayerManager.close();
+                //close socket if exist
+                if (mBluetoothClient != null)
+                    mBluetoothClient.cancel();
+            }
         }
         // unregisterReceiver
         if (mBroadcastReceiver != null)

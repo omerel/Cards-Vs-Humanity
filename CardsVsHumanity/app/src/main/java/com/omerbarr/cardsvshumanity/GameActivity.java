@@ -25,9 +25,11 @@ import com.omerbarr.cardsvshumanity.BusinessLogic.DataTransferred;
 import com.omerbarr.cardsvshumanity.BusinessLogic.GameCommandsConstants;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
+
 public class GameActivity extends AppCompatActivity implements GameCommandsConstants,
         PickWhiteCardFragment.OnFragmentInteractionListener,PickBlackCardFragment.OnFragmentInteractionListener,
-        WaitingToPlayersFragment.OnFragmentInteractionListener, WaitingToCzarFragment.OnFragmentInteractionListener {
+        WaitingToPlayersFragment.OnFragmentInteractionListener, WaitingToCzarFragment.OnFragmentInteractionListener,
+        PickRoundWinnerFragment.OnFragmentInteractionListener,RoundWinnerFragment.OnFragmentInteractionListener{
 
     private final String TAG = "DEBUG: "+GameActivity.class.getSimpleName();
 
@@ -35,12 +37,19 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
     public static final String BROAD_CAST_PLAYER_MODE = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_PLAYER_MODE";
     public static final String BROAD_CAST_PLAYER_WAITING = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_PLAYER_WAITING";
     public static final String BROAD_CAST_CZAR_WAITING = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_CZAR_WAITING";
+    public static final String BROAD_CAST_PICK_ROUND_WINNER = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_PICK_ROUND_WINNER";
+    public static final String BROAD_CAST_SHOW_ROUND_RESULT = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_SHOW_ROUND_RESULT";
+    public static final String UPDATE_MANAGER_WITH_CZAR_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_MANAGER_WITH_CZAR_DATA";
+
+
 
 
     final int PLAYER_MODE = 1;
     final int CZAR_MODE = 2;
     final int PLAYER_WAITING = 3;
     final int CZAR_WAITING = 4;
+    final int PICK_ROUND_WINNER = 5;
+    final int ROUND_WINNER = 6;
 
 
     private TextView mTextScore;
@@ -59,6 +68,8 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
 
     private int myId;
 
+    // picked answers from all users
+    private DataTransferred.PlayerData[] mPlayersData;
 
     private DataTransferred.RoundData recievedRoundData;
     private DataTransferred.CzarData recievedCzarData;
@@ -186,6 +197,15 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
             case CZAR_WAITING:
                 mFragment = WaitingToPlayersFragment.newWaitingToPlayersFragment();
                 break;
+            case PICK_ROUND_WINNER:
+                boolean amICzar = (myId == recievedRoundData.mCurrentCzar);
+                mFragment = PickRoundWinnerFragment.newPickRoundWinnerFragment(JsonConvertor.convertToJson(mPlayersData),
+                        recievedCzarData.pickedBlackCard,amICzar);
+                break;
+            case ROUND_WINNER:
+                mTextScore.setText(SCORE+recievedRoundData.mScoreTable[myId]);
+                mFragment = RoundWinnerFragment.newRoundWinnerFragment(JsonConvertor.convertToJson(recievedRoundData),myId);
+                break;
         }
 
         if (mFragment != null) {
@@ -217,6 +237,11 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
         mFilter.addAction(BROAD_CAST_CZAR_WAITING);
         mFilter.addAction(BROAD_CAST_PLAYER_MODE);
         mFilter.addAction(BROAD_CAST_PLAYER_WAITING);
+        mFilter.addAction(BROAD_CAST_PICK_ROUND_WINNER);
+        mFilter.addAction(UPDATE_MANAGER_WITH_CZAR_DATA);
+        mFilter.addAction(BROAD_CAST_SHOW_ROUND_RESULT);
+
+
 
         mBroadcastReceiver = new BroadcastReceiver() {
 
@@ -228,9 +253,10 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
                 switch (action){
                     case BROAD_CAST_CZAR_MODE:
                         recievedRoundData = JsonConvertor.JsonToRoundData(intent.getStringExtra("data"));
+                        mTextScore.setText(SCORE+recievedRoundData.mScoreTable[myId]);
+                        mRound.setText(ROUND+recievedRoundData.mRound);
                         displayFragment(CZAR_MODE);
                         Log.e(TAG,"BROAD_CAST_CZAR_MODE");
-
                         break;
                     case BROAD_CAST_CZAR_WAITING:
                         displayFragment(CZAR_WAITING);
@@ -248,8 +274,20 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
                         mTextScore.setText(SCORE+recievedRoundData.mScoreTable[myId]);
                         mRound.setText(ROUND+recievedRoundData.mRound);
                         displayFragment(PLAYER_WAITING);
-
-
+                        break;
+                    case BROAD_CAST_PICK_ROUND_WINNER:
+                        String data = intent.getStringExtra("data");
+                        mPlayersData = JsonConvertor.JsonToPlayersData(data);
+                        displayFragment(PICK_ROUND_WINNER);
+                        break;
+                    case UPDATE_MANAGER_WITH_CZAR_DATA:
+                        Log.e(TAG,"UPDATE_MANAGER_WITH_CZAR_DATA");
+                        recievedCzarData = JsonConvertor.JsonToCzarData(intent.getStringExtra("data"));
+                        break;
+                    case BROAD_CAST_SHOW_ROUND_RESULT:
+                        Log.e(TAG,"BROAD_CAST_SHOW_ROUND_RESULT");
+                        recievedRoundData = JsonConvertor.JsonToRoundData(intent.getStringExtra("data"));
+                        displayFragment(ROUND_WINNER);
                         break;
                 }
             }

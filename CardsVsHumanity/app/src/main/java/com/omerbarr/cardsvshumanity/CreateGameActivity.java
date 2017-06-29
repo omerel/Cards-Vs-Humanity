@@ -31,6 +31,7 @@ import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService;
 import com.omerbarr.cardsvshumanity.Utils.PlayerListArrayAdapter;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.KILL_SERVICE;
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothService.OPEN_SEVER;
@@ -199,8 +200,14 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
     }
 
     private String generateGameCode() {
-        mTextViewCode.setText("bbbb");
-        return "bbbb";
+        Random random = new Random();
+        String letters = "1234567890qwertyuiopasdfghjklzxcvbnm";
+        String code = "";
+        for (int i = 0; i < 4; i++) {
+            code+=letters.charAt(random.nextInt(letters.length()));
+        }
+        mTextViewCode.setText(code);
+        return code;
     }
 
     private void startPublish() {

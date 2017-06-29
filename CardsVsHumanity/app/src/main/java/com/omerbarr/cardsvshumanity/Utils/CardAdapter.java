@@ -37,6 +37,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
     public class CardViewHolder extends RecyclerView.ViewHolder{
         public TextView cardContent;
+        public int parentPlayerId;
 
         public CardViewHolder(View view) {
             super(view);
