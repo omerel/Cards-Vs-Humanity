@@ -17,6 +17,8 @@ import com.omerbarr.cardsvshumanity.Utils.GifImageView;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
 import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.FINISH_ROUND;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_CHEER;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_DRAW;
 
 
 public class RoundWinnerFragment extends Fragment {
@@ -114,8 +116,10 @@ public class RoundWinnerFragment extends Fragment {
         mGifImageView = (GifImageView) view.findViewById(R.id.gif);
         //mGifImageView.setGifImageResource(R.drawable.gif_waiting);
         // choose gif
-        if (roundData.mLastRoundWinner == myId)
+        if (roundData.mLastRoundWinner == myId) {
             mGifImageView.setGifImageResource(R.drawable.gif_win);
+
+        }
         else {
             if (roundData.mCurrentCzar == myId)
                 mGifImageView.setGifImageResource(R.drawable.gif_waiting);
@@ -154,6 +158,6 @@ public class RoundWinnerFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int cmd);
+        void onFragmentInteraction(int sound);
     }
 }

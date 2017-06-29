@@ -24,9 +24,13 @@ public interface BluetoothConstants {
 
     int READ_PACKET = 115;
 
-    int FAILED_DURING_RECEIVE_PACKET = 116;
+    //int FAILED_DURING_RECEIVE_PACKET = 116;
 
-    int FAILED_DURING_WRITE_PACKET = 117;
+    //int FAILED_DURING_WRITE_PACKET = 117;
+
+    int DEVICE_DISCONNECTED = 118;
+
+    int CMD_END_GAME = 119;
 
 
 

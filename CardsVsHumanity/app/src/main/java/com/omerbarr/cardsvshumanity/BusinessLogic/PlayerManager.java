@@ -13,6 +13,7 @@ import android.util.Log;
 import com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConnected;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.CMD_END_GAME;
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_MODE;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_WAITING;
@@ -20,6 +21,7 @@ import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PICK_ROUND_WI
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_MODE;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_WAITING;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_SHOW_ROUND_RESULT;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_STOP_GAME;
 import static com.omerbarr.cardsvshumanity.JoinGameActivity.BROAD_CAST_START_GAME;
 
 /**
@@ -164,6 +166,13 @@ public class PlayerManager implements GameCommandsConstants {
                     // go to pick roundWinner
                     intent = new Intent(BROAD_CAST_PICK_ROUND_WINNER);
                     intent.putExtra("data",jsonPlayersData);
+                    mServiceContext.sendBroadcast(intent);
+                    break;
+                case CMD_END_GAME:
+                    Log.e(TAG, "CMD_END_GAME");
+                    String message = JsonConvertor.getJsonContent(jsonPacket);
+                    intent = new Intent(BROAD_CAST_STOP_GAME);
+                    intent.putExtra("data",message);
                     mServiceContext.sendBroadcast(intent);
                     break;
             }

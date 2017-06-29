@@ -94,6 +94,11 @@ public class GameData implements GameCommandsConstants {
 
     public int getCurrentCzar(){return mCurrentCzar;}
 
+    public String getPlayerName(int index){
+        return mPlayersNameArrayList.get(index);
+    }
+
+
     public void spreadWhiteCardsToAllPlayers(){
 
         while ( mWhiteCards.size() > 0 ){

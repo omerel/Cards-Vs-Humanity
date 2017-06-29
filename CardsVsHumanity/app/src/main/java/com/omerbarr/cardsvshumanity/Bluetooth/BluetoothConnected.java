@@ -115,14 +115,14 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
             } catch (IOException e) {
                 Log.e(TAG, "Error - got out from read packet loop.\n"+e.getMessage());
                 if (!closedProperly)
-                    sendMessageManager(FAILED_DURING_RECEIVE_PACKET,"Error - got out from read packet loop.\n"+e.getMessage());
+                    sendMessageManager(DEVICE_DISCONNECTED,String.valueOf(myId));
                 cancel();
                 break;
             }
             catch (Exception e) {
                 Log.e(TAG, "Error - Problem with reading data\n"+e.getMessage());
                 cancel();
-                sendMessageManager(FAILED_DURING_RECEIVE_PACKET,"Error - Problem with reading data\n"+e.getMessage());
+               // sendMessageManager(FAILED_DURING_RECEIVE_PACKET,"Error - Problem with reading data\n"+e.getMessage());
                 break;
             }
         }
@@ -157,7 +157,7 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
         catch (IOException e) {
             Log.e(TAG, "Error with writePacket "+e.getMessage());
             cancel();
-            sendMessageManager(FAILED_DURING_WRITE_PACKET,"Error with writePacket "+e.getMessage());
+            //sendMessageManager(FAILED_DURING_WRITE_PACKET,"Error with writePacket "+e.getMessage());
         }
     }
 
@@ -198,6 +198,9 @@ public class BluetoothConnected extends Thread implements BluetoothConstants {
             Log.e(TAG, "Error with sendMessageToBluetoothManager ");
         }
     }
+
+
+    public BluetoothSocket getBluetoothSocket(){return mBluetoothSocket;}
 
     // Close thread
     public void cancel() {

@@ -28,6 +28,8 @@ import com.omerbarr.cardsvshumanity.Utils.GridSpacingItemDecoration;
 import java.util.ArrayList;
 
 import static com.omerbarr.cardsvshumanity.BusinessLogic.PlayerManager.UPDATE_PLAYER_DATA;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_DEAL;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_DRAW;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -189,6 +191,8 @@ public class PickWhiteCardFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
+        mListener.onFragmentInteraction(SOUND_DEAL);
+
         // Inflate the layout for this fragment
         view = inflater.inflate(R.layout.fragment_pick_white_card, container, false);
 
@@ -207,12 +211,9 @@ public class PickWhiteCardFragment extends Fragment {
         mCardListAdapter = new CardListAdapter(mCardArrayList);
         mCardRecyclerView.setAdapter(mCardListAdapter);
         initSwipe();
-
         return view;
     }
 
-    public void onButtonPressed(int[] pickedanswers) {
-    }
 
     @Override
     public void onAttach(Context context) {
@@ -242,7 +243,7 @@ public class PickWhiteCardFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int[] pickedanswers);
+        void onFragmentInteraction(int makeSound);
     }
     /**
      * Converting dp to pixel
@@ -295,7 +296,7 @@ public class PickWhiteCardFragment extends Fragment {
                     mPickedanswers[mAnswerCounter] = mReceivedCards[viewHolder.getAdapterPosition()];
                     mAnswerCounter++;
                     mTextCounter.setText(mAnswerCounter+"/"+mNumOfAnswers);
-                    Toast.makeText(getContext(),"Card was picked", Toast.LENGTH_SHORT).show();
+                    mListener.onFragmentInteraction(SOUND_DRAW);
                     mCardListAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
                     if (mAnswerCounter == mNumOfAnswers){
                         sendAnswers();

@@ -29,6 +29,8 @@ import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 import java.util.ArrayList;
 
 import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.UPDATE_ROUND_RESULT;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_DRAW;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_FLIP;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -167,8 +169,6 @@ public class PickRoundWinnerFragment extends Fragment {
         return view;
     }
 
-    public void onButtonPressed(int[] pickedanswers) {
-    }
 
     @Override
     public void onAttach(Context context) {
@@ -198,7 +198,7 @@ public class PickRoundWinnerFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int[] pickedanswers);
+        void onFragmentInteraction(int sound);
     }
     /**
      * Converting dp to pixel
@@ -253,7 +253,9 @@ public class PickRoundWinnerFragment extends Fragment {
                     mTextCounter.setText(mAnswerCounter+"/"+mNumOfAnswers);
                     viewHolder.itemView.setVisibility(View.INVISIBLE);
 
-                     int player = findWinnerId(mCardArrayList.get(viewHolder.getAdapterPosition()));
+                    mListener.onFragmentInteraction(SOUND_DRAW);
+
+                    int player = findWinnerId(mCardArrayList.get(viewHolder.getAdapterPosition()));
                     Intent intent = new Intent(UPDATE_ROUND_RESULT);
                     intent.putExtra("data",player);
                     getActivity().sendBroadcast(intent);

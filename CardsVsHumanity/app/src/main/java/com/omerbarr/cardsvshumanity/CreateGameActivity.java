@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
@@ -12,6 +13,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -120,6 +122,9 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
             }
         },200);
 
+        if (!BluetoothAdapter.getDefaultAdapter().isEnabled())
+            bluetoothDialog();
+
 
     }
 
@@ -208,6 +213,7 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         }
         mTextViewCode.setText(code);
         return code;
+        //return "bbbb";
     }
 
     private void startPublish() {
@@ -275,5 +281,19 @@ public class CreateGameActivity extends AppCompatActivity implements View.OnClic
         intent.putExtra("id",id);
         startActivity(intent);
         overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+    }
+    private void bluetoothDialog() {
+
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle("Bluetooth needed");
+        alertDialog.setMessage("Please turn on your bluetooth in order to play this game");
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "turn on bluetooth",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        BluetoothAdapter.getDefaultAdapter().enable();
+                    }
+                });
+
+        alertDialog.show();
     }
 }

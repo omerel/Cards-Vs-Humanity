@@ -118,6 +118,6 @@ public class WaitingToCzarFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int cmd);
+        void onFragmentInteraction(int sound);
     }
 }

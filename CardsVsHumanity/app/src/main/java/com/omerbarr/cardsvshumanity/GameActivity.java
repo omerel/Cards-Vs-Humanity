@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.MediaPlayer;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -25,6 +26,8 @@ import com.omerbarr.cardsvshumanity.BusinessLogic.DataTransferred;
 import com.omerbarr.cardsvshumanity.BusinessLogic.GameCommandsConstants;
 import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
+import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.STOP_GAME;
+
 
 public class GameActivity extends AppCompatActivity implements GameCommandsConstants,
         PickWhiteCardFragment.OnFragmentInteractionListener,PickBlackCardFragment.OnFragmentInteractionListener,
@@ -40,6 +43,15 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
     public static final String BROAD_CAST_PICK_ROUND_WINNER = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_PICK_ROUND_WINNER";
     public static final String BROAD_CAST_SHOW_ROUND_RESULT = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_SHOW_ROUND_RESULT";
     public static final String UPDATE_MANAGER_WITH_CZAR_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_MANAGER_WITH_CZAR_DATA";
+    public static final String BROAD_CAST_DEVICE_DISCONNECTED = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_DEVICE_DISCONNECTED";
+    public static final String BROAD_CAST_STOP_GAME = "cardsvshumanity.BroadcastReceiver.BROAD_CAST_STOP_GAME";
+
+    //sounds
+    public static final int SOUND_FLIP= 11;
+    public static final int SOUND_DEAL = 12;
+    public static final int SOUND_DRAW = 13;
+    public static final int SOUND_CHEER = 14;
+
 
 
 
@@ -216,15 +228,9 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
         }
         crossfade(mShortAnimationDuration);
     }
-
-
     @Override
-    public void onFragmentInteraction(int[] pickedAnswers) {
-    }
-
-    @Override
-    public void onFragmentInteraction(int cmd) {
-        // not in use
+    public void onFragmentInteraction(int sound) {
+        creatSound(sound);
     }
 
     /**
@@ -240,7 +246,8 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
         mFilter.addAction(BROAD_CAST_PICK_ROUND_WINNER);
         mFilter.addAction(UPDATE_MANAGER_WITH_CZAR_DATA);
         mFilter.addAction(BROAD_CAST_SHOW_ROUND_RESULT);
-
+        mFilter.addAction(BROAD_CAST_DEVICE_DISCONNECTED);
+        mFilter.addAction(BROAD_CAST_STOP_GAME);
 
 
         mBroadcastReceiver = new BroadcastReceiver() {
@@ -289,12 +296,80 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
                         recievedRoundData = JsonConvertor.JsonToRoundData(intent.getStringExtra("data"));
                         displayFragment(ROUND_WINNER);
                         break;
+                    case BROAD_CAST_DEVICE_DISCONNECTED:
+                        Log.e(TAG,"BROAD_CAST_DEVICE_DISCONNECTED");
+                        String id = intent.getStringExtra("data");
+                        playerQuitDialog(id,true);
+                        break;
+                    case BROAD_CAST_STOP_GAME:
+                        String message = intent.getStringExtra("data");
+                        playerQuitDialog(message,false);
+                        break;
                 }
             }
         };
         registerReceiver(mBroadcastReceiver, mFilter);
     }
 
+    private void playerQuitDialog(String idString ,boolean isCzar){
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+        final int id = Integer.valueOf(idString);
+        if (isCzar)
+        {
+            alertDialog.setTitle(recievedRoundData.mPlayersNameArrayList.get(id)+"has quit the game");
+            if (recievedRoundData.mPlayersNameArrayList.size() > 3){
+                alertDialog.setMessage("Please go to main to start a new game");
+                alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                // broadcast players end of game
+                                Intent intent = new Intent(STOP_GAME);
+                                intent.putExtra("data","a friend quit the game. not enough players to continue");
+                                sendBroadcast(intent);
+                                // kill activity
+                                onDestroy();
+                                intent = new Intent(getApplicationContext(), MainActivity.class);
+                                startActivity(intent);
+                                overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+                            }
+                        });
+            }
+            else{
+                alertDialog.setMessage("Unfortunately you don't have enough players to continue");
+                alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Go to main",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                // broadcast players end of game
+                                Intent intent = new Intent(STOP_GAME);
+                                intent.putExtra("data","a friend quit the game. not enough players to continue");
+                                sendBroadcast(intent);
+                                // kill activity
+                                onDestroy();
+                                intent = new Intent(getApplicationContext(), MainActivity.class);
+                                startActivity(intent);
+                                overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+                            }
+                        });
+            }
+        }else{
+            alertDialog.setTitle("Bummer!");
+            alertDialog.setMessage(idString);
+            alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Go to main",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // kill activity
+                            onDestroy();
+                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                            startActivity(intent);
+                            overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+                        }
+                    });
+        }
+
+
+        alertDialog.show();
+    }
     private void ShowScoreTable() {
 
         String score="";
@@ -348,5 +423,25 @@ public class GameActivity extends AppCompatActivity implements GameCommandsConst
         alertDialog.show();
     }
 
+
+    private void creatSound(int sound){
+        MediaPlayer mp = null;
+        switch (sound){
+            case SOUND_FLIP:
+                mp = MediaPlayer.create(this, R.raw.card_flip);
+                break;
+            case SOUND_DEAL:
+                mp = MediaPlayer.create(this, R.raw.card_dealing);
+                break;
+            case SOUND_CHEER:
+                mp = MediaPlayer.create(this, R.raw.sound_cheer);
+                break;
+            case SOUND_DRAW:
+                mp = MediaPlayer.create(this, R.raw.card_draw);
+                break;
+        }
+        if (mp != null)
+            mp.start();
+    }
 
 }

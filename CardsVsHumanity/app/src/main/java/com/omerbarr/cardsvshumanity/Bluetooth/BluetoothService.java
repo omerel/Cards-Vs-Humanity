@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static com.omerbarr.cardsvshumanity.CreateGameActivity.ADD_DEVICE_TO_LIST;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_STOP_GAME;
 import static com.omerbarr.cardsvshumanity.JoinGameActivity.UPDATE_UI_FOUND_DEVICE;
 
 /**
@@ -160,6 +161,9 @@ public class BluetoothService extends Service implements BluetoothConstants{
                         final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
                         if (state == BluetoothAdapter.STATE_OFF){
                             Log.e(TAG,"Bluetooth is off");
+                            Intent intent1 = new Intent(BROAD_CAST_STOP_GAME);
+                            intent1.putExtra("data","Bluetooth turned off ! no way we can play now");
+                            sendBroadcast(intent1);
                         }
                         if (state == BluetoothAdapter.STATE_ON) {
                             Log.e(TAG,"Bluetooth is on");

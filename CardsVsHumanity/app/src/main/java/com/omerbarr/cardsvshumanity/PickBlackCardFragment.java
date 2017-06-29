@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static com.omerbarr.cardsvshumanity.BusinessLogic.GameManager.UPDATE_CZAR_DATA;
+import static com.omerbarr.cardsvshumanity.GameActivity.SOUND_FLIP;
 import static com.omerbarr.cardsvshumanity.GameActivity.UPDATE_MANAGER_WITH_CZAR_DATA;
 
 
@@ -121,6 +122,8 @@ public class PickBlackCardFragment extends Fragment {
                 mButtonReset.setAlpha((float) 0.15);
                 mButtonReset.setEnabled(false);
 
+                mListener.onFragmentInteraction(SOUND_FLIP);
+
                 // broadcast game manger picked card
                 Intent intent =  new Intent(UPDATE_CZAR_DATA);
                 intent.putExtra("data",pickedCard);
@@ -179,7 +182,7 @@ public class PickBlackCardFragment extends Fragment {
      */
 
     public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(int cmd);
+        void onFragmentInteraction(int sound);
     }
 
     public int shuffleBlackCard(ArrayList arrayList){
@@ -187,6 +190,7 @@ public class PickBlackCardFragment extends Fragment {
         if (arrayList.size() > 0) {
             Random random = new Random();
             card = random.nextInt(arrayList.size());
+
         }
         return card;
     }

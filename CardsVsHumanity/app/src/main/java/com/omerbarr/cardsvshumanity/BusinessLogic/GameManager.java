@@ -15,10 +15,13 @@ import com.omerbarr.cardsvshumanity.Utils.JsonConvertor;
 
 import java.util.ArrayList;
 
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.CMD_END_GAME;
+import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.DEVICE_DISCONNECTED;
 import static com.omerbarr.cardsvshumanity.Bluetooth.BluetoothConstants.READ_PACKET;
 import static com.omerbarr.cardsvshumanity.CreateGameActivity.BROAD_CAST_START_GAME;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_MODE;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_CZAR_WAITING;
+import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_DEVICE_DISCONNECTED;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PICK_ROUND_WINNER;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_MODE;
 import static com.omerbarr.cardsvshumanity.GameActivity.BROAD_CAST_PLAYER_WAITING;
@@ -38,6 +41,7 @@ public class GameManager implements  GameCommandsConstants {
     public static final String UPDATE_PLAYER_DATA = "cardsvshumanity.BroadcastReceiver.UPDATE_PLAYER_DATA";
     public static final String UPDATE_ROUND_RESULT = "cardsvshumanity.BroadcastReceiver.UPDATE_ROUND_RESULT";
     public static final String FINISH_ROUND = "cardsvshumanity.BroadcastReceiver.FINISH_ROUND";
+    public static final String STOP_GAME = "cardsvshumanity.BroadcastReceiver.STOP_GAME";
 
 
     private final int ALL_DEVICES = -1;
@@ -63,6 +67,7 @@ public class GameManager implements  GameCommandsConstants {
 
     // handler
     private Handler mHandler;
+
 
     // Player BroadcastReceiver
     private BroadcastReceiver mBroadcastReceiver;
@@ -98,6 +103,7 @@ public class GameManager implements  GameCommandsConstants {
             }
         };
 
+
         createGameBroadcastReceiver();
 
         Intent intent  = new Intent(BROAD_CAST_START_GAME);
@@ -106,6 +112,7 @@ public class GameManager implements  GameCommandsConstants {
 
         resetAckStatus();
         sendPacketFirstTime();
+
     }
 
     public void close(){
@@ -149,6 +156,14 @@ public class GameManager implements  GameCommandsConstants {
                     int deviceId = msg.getData().getInt("id");
                     // update handshake with the new packet
                     decodePacket(packet,deviceId);
+                    break;
+
+                case DEVICE_DISCONNECTED:
+                    Log.e(TAG, "DEVICE_DISCONNECTED");
+                    String id= msg.getData().getString("message");
+                    Intent intent = new Intent(BROAD_CAST_DEVICE_DISCONNECTED);
+                    intent.putExtra("data",id);
+                    mServiceContext.sendBroadcast(intent);
                     break;
 
                 default:
@@ -282,6 +297,7 @@ public class GameManager implements  GameCommandsConstants {
                 case CMD_FINISH_ROUND:
                     startRound();
                     break;
+
             }
         } catch (Exception e) {
             Log.e(TAG,"Error in decodePacket method,error-"+e.getMessage());
@@ -305,6 +321,8 @@ public class GameManager implements  GameCommandsConstants {
         mFilter.addAction(UPDATE_CZAR_DATA);
         mFilter.addAction(UPDATE_ROUND_RESULT);
         mFilter.addAction(FINISH_ROUND);
+        mFilter.addAction(STOP_GAME);
+
 
 
         mBroadcastReceiver = new BroadcastReceiver() {
@@ -361,6 +379,13 @@ public class GameManager implements  GameCommandsConstants {
                     case FINISH_ROUND:
                         startRound();
                         break;
+
+                    case STOP_GAME:
+                        String message = intent.getStringExtra("data");
+                        sendPacket(ALL_DEVICES,CMD_END_GAME,message);
+                        break;
+
+
                 }
             }
         };
