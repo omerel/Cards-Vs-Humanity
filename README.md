@@ -11,7 +11,7 @@ The famous game, now on Android
 * Designed & Created by [@omerel](https://github.com/omerel/RELAY) and [@barrinbar](https://github.com/barrinbar)
 * Design inspiration  [@Mark Manalaysay](https://dribbble.com/mmanal)
 
-## IMAges
+## Images
 ![Img](https://github.com/omerel/Cards-Vs-Humanity/blob/master/CardsVsHumanity/1.png) 
 ![Img](https://github.com/omerel/Cards-Vs-Humanity/blob/master/CardsVsHumanity/2.png)
 ![Img](https://github.com/omerel/Cards-Vs-Humanity/blob/master/CardsVsHumanity/3.png) 
